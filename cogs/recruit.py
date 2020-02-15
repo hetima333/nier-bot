@@ -17,7 +17,7 @@ class Recruit(commands.Cog):
         self.end_time = 25
         # 募集開始時間
         # TODO: 外部ファイルに避ける
-        self.send_time = "08:00"
+        self.send_time = "03:10"
         # 対応スタンプ一覧
         # TODO: 外部ファイルに避ける
         self.reactions = ["*⃣", "1⃣", "2⃣", "3⃣", "4⃣",
@@ -78,6 +78,7 @@ class Recruit(commands.Cog):
         if now == f"{self.send_time}":
             await self.create_recruit(self.send_channel_id[0])
             await self.create_recruit(self.send_channel_id[1])
+            await self.watch_all_recruits()
 
     async def create_recruit(self, channel_id: int) -> None:
         # メッセージを送る
@@ -88,7 +89,7 @@ class Recruit(commands.Cog):
 
         now = datetime.datetime.now()
         dt = now.date().strftime('%Y/%m/%d')
-        title = f'{now.month}/{now.day} {self.start_time}時〜{self.end_time}時の募集だよ…'
+        title = f'{now.month}/{now.day} {self.start_time}時〜{self.end_time}時の放置狩り募集だよ…'
         embed = discord.Embed(title=title, color=0x8080c0)
         embed.description = "準備してるから…少し待って…ね"
         msg = await channel.send(embed=embed)
@@ -110,9 +111,6 @@ class Recruit(commands.Cog):
 
         # jsonに記録
         self.update_recruit()
-
-        # 監視
-        await self.watch_recruit(msg_id, self.RECRUITS[msg_id])
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -153,7 +151,7 @@ class Recruit(commands.Cog):
             return
 
         dt = datetime.datetime.strptime(data['date'], '%Y/%m/%d')
-        title = f'{dt.month}/{dt.day} 放置狩り {self.start_time}時〜{self.end_time}時'
+        title = f'{dt.month}/{dt.day} {self.start_time}時〜{self.end_time}時の放置狩り募集だよ…'
         embed = discord.Embed(title=title, color=0x8080c0)
         embed.description = "準備してるから…少し待って…ね"
         await msg.edit(embed=embed)
@@ -191,7 +189,7 @@ class Recruit(commands.Cog):
                         value += f'<@!{k}>\n'
                         count += 1
                 # 若葉用の記述
-                name += f"（若葉： {recruit['rookie_count'][i]}/{self.max_rookie_count}）"
+                name += f"（🍀️： {recruit['rookie_count'][i]}/{self.max_rookie_count}）"
                 # 人数によって絵文字切り替え
                 # TODO: 人数によって色を変える
                 if count > 5:
@@ -206,12 +204,13 @@ class Recruit(commands.Cog):
 
         embed.description = "時間帯に対応した番号で参加・キャンセル"
         if self.start_time != self.end_time - 1:
-            embed.description += "\n:asterisk:で全ての時間帯に参加・キャンセル"
+            embed.description += "\n:asterisk:で全ての時間帯に参加・キャンセルできるよ…"
         self.update_recruit()
         await update_embed()
 
         # TODO: 残り時間をちゃんと算出する
-        remaining_time = 24 * 60 * 60
+        # remaining_time = 24 * 60 * 60
+        remaining_time = 24
 
         # リアクション待機ループ
         while not self.bot.is_closed():
@@ -225,9 +224,6 @@ class Recruit(commands.Cog):
                 user = payload.member
                 emoji = str(payload.emoji)
             except asyncio.TimeoutError:
-                embed.description = "この募集は終了したよ"
-                await msg.clear_reactions()
-                await msg.edit(embed=embed)
                 break
             else:
                 recruit = self.RECRUITS[msg_id]
@@ -273,6 +269,14 @@ class Recruit(commands.Cog):
                 self.update_recruit()
                 await update_embed()
                 await msg.remove_reaction(emoji, user)
+
+        embed.description = "この募集は終了したよ…"
+        await msg.clear_reactions()
+        await msg.edit(embed=embed)
+
+        # 募集が終わったので削除する
+        self.RECRUITS.pop(msg_id)
+        self.update_recruit()
 
     def is_rookie(self, member: discord.Member) -> bool:
         '''初心者かどうか判定する'''
