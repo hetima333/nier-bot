@@ -15,15 +15,91 @@ class Recruit(commands.Cog):
         self.end_time = 25
 
         # json読み込み
-        self.RECRUIT_FILE = Path('')
+        self.RECRUIT_FILE = Path('./data/json/recruit.json')
         with self.RECRUIT_FILE.open() as f:
             self.RECRUITS = json.loads(f.read())
+
+        if 'msg_id' not in self.RECRUITS:
+            self.RECRUITS['msg_id'] = {}
+
+    # async def watch_all_recruits(self) -> None:
+    #     def notify(order):
+    #         print(order + " has just finished.")
+
+    #     cors = [sleeping(s[0], s[1], hook=notify) for s in Seconds]
+    #     results = await asyncio.gather(*cors)
+    #     return results
+
+    # async def watch_recruit(self) -> None:
+    #     # TODO: 募集メッセージが消えていないかチェック
+
+    #     # TODO: リアクションを一旦全部消す
+
+    #     # TODO: チェック関数をrawに対応
+    #     def check(payload):
+    #         emoji = str(payload.emoji)
+    #         member = payload.member
+    #         if member is None:
+    #             pass
+    #         elif member.bot is True:    # botは無視
+    #             pass
+    #         elif payload.message_id != embed_message.id:
+    #             pass
+    #         else:
+    #             return emoji in self.emoji_dic.values()
+
+    #     # リアクション待機ループ
+    #     while not self.bot.is_closed():
+    #         try:
+    #             # NOTE: reaction_add だとメッセージがキャッシュにないと実行されない
+    #             # https://discordpy.readthedocs.io/ja/latest/api.html?highlight=wait_for#discord.on_reaction_add
+    #             payload = await self.bot.wait_for(
+    #                 'raw_reaction_add',
+    #                 timeout=remaining_time,
+    #                 check=check)
+    #             user = payload.member
+    #             emoji = str(payload.emoji)
+    #         except asyncio.TimeoutError:
+    #             embed.description = "この募集は終了したよ"
+    #             await msg.edit(embed=embed)
+    #             break
+    #         else:
+    #             # 未参加のユーザーを追加
+    #             members = self.RECRUITS['members']
+    #             user_id = str(user.id)
+    #             if user_id not in members:
+    #                 members[user_id] = {
+    #                     'name': user.mention,
+    #                     'flgs': {
+    #                         msg_id: 0
+    #                     }
+    #                 }
+
+    #             flgs = members[user_id]['flgs']
+    #             if msg_id not in flgs:
+    #                 flgs[msg_id] = 0
+
+    #             if emoji == '*⃣':
+    #                 if flgs[msg_id] == 0:
+    #                     # NOTE: 募集が9時間まで前提のフラグ
+    #                     flgs[msg_id] = 0b111111111
+    #                 else:
+    #                     flgs[msg_id] = 0
+    #                     # members.pop(user_id)
+    #             else:
+    #                 emoji_index = reactions.index(emoji) - 1
+    #                 flgs[msg_id] = flgs[msg_id] ^ (1 << emoji_index)
+
+    #             # どの募集にも参加していなければ消す
+
+    #             self.update_recruit()
+    #             await update_embed()
+    #             await msg.remove_reaction(emoji, user)
 
     @commands.command()
     async def foo(self, ctx):
         reactions = ["0⃣", "1⃣", "2⃣", "3⃣", "4⃣",
                      "5⃣", "6⃣", "7⃣", "8⃣", "9⃣"]
-        reaction_members = {}
         now = datetime.datetime.now()
 
         if self.start_time >= self.end_time:
@@ -33,12 +109,18 @@ class Recruit(commands.Cog):
         if recruit_count > 9:
             return
 
-        month = now.month()
-        day = now.day()
+        month = now.month
+        day = now.day
         title = f'{month}/{day} 放置狩り {self.start_time}時〜{self.end_time}時'
         embed = discord.Embed(title=title, color=0xFF0000)
         embed.description = "準備中だ…少し待て"
         msg = await ctx.send(embed=embed)
+        msg_id = str(msg.id)
+        # 募集がなければ追加
+        if msg_id not in self.RECRUITS['msg_id']:
+            self.RECRUITS['msg_id'][msg_id] = {
+                'members': {}
+            }
 
         if recruit_count > 1:
             await msg.add_reaction('*⃣')
@@ -53,9 +135,11 @@ class Recruit(commands.Cog):
                 mask = 1 << i
                 value = ""
                 count = 0
-                for v in reaction_members.values():
-                    if (v['flag'] & mask) == mask:
-                        value += v['name'] + '\n'
+                members = self.RECRUITS['msg_id'][msg_id]['members']
+                for k, v in members.items():
+                    if (v & mask) == mask:
+                        # TODO: 役職でどうこうするならここ
+                        value += f'<@!{k}>\n'
                         count += 1
                 # 人数によって絵文字切り替え
                 # TODO: 人数によって色を変える
@@ -102,27 +186,31 @@ class Recruit(commands.Cog):
                 break
             else:
                 # 未参加のユーザーを追加
-                if user.id not in reaction_members:
-                    reaction_members[user.id] = {
-                        'name': user.mention,
-                        'flag': 0
-                    }
+                members = self.RECRUITS['msg_id'][msg_id]['members']
+                user_id = str(user.id)
+                if user_id not in members:
+                    members[user_id] = 0
 
-                flag = reaction_members[user.id]['flag']
+                flg = members[user_id]
                 if emoji == '*⃣':
-                    if flag == 0:
+                    if members[user_id] == 0:
                         # NOTE: 募集が9時間まで前提のフラグ
-                        reaction_members[user.id]['flag'] = 0b111111111
+                        members[user_id] = 0b111111111
                     else:
-                        reaction_members[user.id]['flag'] = 0
-                        reaction_members.pop(user.id)
+                        members[user_id] = 0
+                        # members.pop(user_id)
                 else:
                     emoji_index = reactions.index(emoji) - 1
-                    reaction_members[user.id]['flag'] = flag ^ (
-                        1 << emoji_index)
+                    members[user_id] = members[user_id] ^ (1 << emoji_index)
 
+                self.update_recruit()
                 await update_embed()
                 await msg.remove_reaction(emoji, user)
+
+    def update_recruit(self) -> None:
+        '''募集をjsonに反映'''
+        with self.RECRUIT_FILE.open('w') as f:
+            f.write(json.dumps(self.RECRUITS, ensure_ascii=False, indent=4))
 
 
 def setup(bot):
