@@ -17,7 +17,7 @@ class Recruit(commands.Cog):
         self.end_time = 25
         # 募集開始時間
         # TODO: 外部ファイルに避ける
-        self.send_time = "03:10"
+        self.send_time = "08:00"
         # 対応スタンプ一覧
         # TODO: 外部ファイルに避ける
         self.reactions = ["*⃣", "1⃣", "2⃣", "3⃣", "4⃣",
@@ -171,7 +171,7 @@ class Recruit(commands.Cog):
             elif payload.message_id != int(msg_id):
                 pass
             else:
-                return emoji in self.reactions or emoji == '*⃣'
+                return emoji in self.reactions
 
         async def update_embed():
             embed.clear_fields()
