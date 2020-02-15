@@ -11,7 +11,7 @@ TOKEN = os.environ['DISCORD_BOT_TOKEN']
 
 
 # Botクラス
-class Bahamut(commands.Bot):
+class Nier(commands.Bot):
     def __init__(self):
         super().__init__(
             command_prefix=config.COMMAND_PREFIX,
@@ -29,7 +29,7 @@ class Bahamut(commands.Bot):
     # 起動時のイベント
     async def on_ready(self):
         print(f'Ready: {self.user} (ID: {self.user.id})')
-        activity = discord.Game('神撃、究極の竜HL')
+        activity = discord.Game('死ト愛ノ世界')
         await self.change_presence(activity=activity)
 
     # Botを起動させる
@@ -38,7 +38,7 @@ class Bahamut(commands.Bot):
 
 
 # Botの作成
-bot = Bahamut()
+bot = Nier()
 
 # Botの起動
 if __name__ == '__main__':
