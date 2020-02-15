@@ -1,4 +1,4 @@
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord.utils import get
 from pathlib import Path
 import discord
@@ -11,62 +11,73 @@ import re
 class Recruit(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        # 募集を一時停止しているか
-        self.pause = False
         # 募集時間
         # TODO: 外部ファイルに避ける
         self.start_time = 21
         self.end_time = 25
         # 募集開始時間
         # TODO: 外部ファイルに避ける
-        self.send_time = 12
+        self.send_time = "08:00"
         # 対応スタンプ一覧
         # TODO: 外部ファイルに避ける
-        self.reactions = ["0⃣", "1⃣", "2⃣", "3⃣", "4⃣",
+        self.reactions = ["*⃣", "1⃣", "2⃣", "3⃣", "4⃣",
                           "5⃣", "6⃣", "7⃣", "8⃣", "9⃣"]
         # 送信チャンネル
         # TODO: 外部ファイルに避ける
+        # self.send_channel_id = [
+        #     667228661899984916,
+        #     667228744196423681
+        # ]
         self.send_channel_id = [
-            667228661899984916,
-            667228744196423681
+            678259997754523680,
+            678260017539055616
         ]
         # 若葉ロール
         # TODO: 外部ファイルに避ける
-        self.rookie_role_id = 666990059647533086
+        # self.rookie_role_id = 666990059647533086
+        self.rookie_role_id = 678259897082707969
+        # 最大若葉の数
+        self.max_rookie_count = 1
 
         # json読み込み
         self.RECRUIT_FILE = Path('./data/json/recruit.json')
         with self.RECRUIT_FILE.open() as f:
             self.RECRUITS = json.loads(f.read())
 
-        self._task = bot.loop.create_task(self.dispatch_timers())
+        # 募集を一時停止しているか
+        self.CONFIG_FILE = Path('./data/json/config.json')
+        with self.CONFIG_FILE.open() as f:
+            self.CONFIG = json.loads(f.read())
+
+        # 定刻募集用ループ
+        self.loop.start()
 
     def cog_unload(self):
-        self._task.cancel()
+        self.loop.cancel()
 
-    @commands.command()
-    async def start(self, ctx):
-        pass
+    @commands.command(aliases=['start'])
+    async def resume(self, ctx):
+        self.update_pause(False)
 
-    async def dispatch_timers(self):
-        '''タイマーの発火'''
-        try:
-            while not self.bot.is_closed():
-                # can only asyncio.sleep for up to ~48 days reliably
-                # so we're gonna cap it off at 40 days
-                # see: http://bugs.python.org/issue20493
-                now = datetime.datetime.now()
-                expires = datetime.datetime(
-                    now.year, now.month, now.day, self.send_time)
+    @commands.command(aliases=['stop'])
+    async def pause(self, ctx):
+        self.update_pause(True)
 
-                if expires >= now:
-                    to_sleep = (expires - now).total_seconds()
-                    await asyncio.sleep(to_sleep)
-        except asyncio.CancelledError:
-            raise
-        except (OSError, discord.ConnectionClosed):
-            self._task.cancel()
-            self._task = self.bot.loop.create_task(self.dispatch_timers())
+    def update_pause(self, flg: bool):
+        recruit = self.CONFIG['recruit']['is_pause']
+        recruit['is_pause'] = flg
+
+    @tasks.loop(seconds=60)
+    async def loop(self) -> None:
+        if self.CONFIG['recruit']['is_pause']:
+            return
+
+        # 現在の時刻
+        now = datetime.datetime.now().strftime('%H:%M')
+
+        if now == f"{self.send_time}":
+            await self.create_recruit(self.send_channel_id[0])
+            await self.create_recruit(self.send_channel_id[1])
 
     async def create_recruit(self, channel_id: int) -> None:
         # メッセージを送る
@@ -83,12 +94,17 @@ class Recruit(commands.Cog):
         msg = await channel.send(embed=embed)
         msg_id = str(msg.id)
 
+        # TODO: 募集時間もjsonに移動させる
+        if self.start_time >= self.end_time:
+            self.end_time += 24
+        recruit_count = self.end_time - self.start_time
+
         # 募集がなければ追加
         if msg_id not in self.RECRUITS:
             self.RECRUITS[msg_id] = {
                 'date': dt,
                 'channel_id': channel.id,
-                'rookie_count': 0,
+                'rookie_count': [0 for i in range(recruit_count)],
                 'members': {}
             }
 
@@ -136,10 +152,8 @@ class Recruit(commands.Cog):
         if recruit_count > 9:
             return
 
-        # TODO: 募集の日付はjsonに記録しておく
-        month = now.month
-        day = now.day
-        title = f'{month}/{day} 放置狩り {self.start_time}時〜{self.end_time}時'
+        dt = datetime.datetime.strptime(data['date'], '%Y/%m/%d')
+        title = f'{dt.month}/{dt.day} 放置狩り {self.start_time}時〜{self.end_time}時'
         embed = discord.Embed(title=title, color=0x8080c0)
         embed.description = "準備してるから…少し待って…ね"
         await msg.edit(embed=embed)
@@ -169,12 +183,15 @@ class Recruit(commands.Cog):
                 mask = 1 << i
                 value = ""
                 count = 0
-                members = self.RECRUITS[msg_id]['members']
+                recruit = self.RECRUITS[msg_id]
+                members = recruit['members']
                 for k, v in members.items():
                     if (v & mask) == mask:
                         # TODO: 役職でどうこうするならここ
                         value += f'<@!{k}>\n'
                         count += 1
+                # 若葉用の記述
+                name += f"（若葉： {recruit['rookie_count'][i]}/{self.max_rookie_count}）"
                 # 人数によって絵文字切り替え
                 # TODO: 人数によって色を変える
                 if count > 5:
@@ -184,7 +201,7 @@ class Recruit(commands.Cog):
                 else:
                     value = f':eyes: あと {5-count} 人足りないよ…\n{value}'
 
-                embed.add_field(name=name, value=value)
+                embed.add_field(name=name, value=value, inline=False)
             await msg.edit(embed=embed)
 
         embed.description = "時間帯に対応した番号で参加・キャンセル"
@@ -214,13 +231,6 @@ class Recruit(commands.Cog):
                 break
             else:
                 recruit = self.RECRUITS[msg_id]
-                # 初心者ならカウントを増やす
-                if self.is_rookie(user):
-                    if int(recruit[msg_id]['recruit_count']) > 2:
-                        # TODO: DMで参加できなかった旨を送信する？
-                        pass
-                    else:
-                        recruit['rookie_count'] += 1
                 # 未参加のユーザーを追加
                 members = recruit['members']
                 user_id = str(user.id)
@@ -228,16 +238,37 @@ class Recruit(commands.Cog):
                     members[user_id] = 0
 
                 flg = members[user_id]
+                # NOTE: 何番目がおされた？
+                emoji_index = self.reactions.index(emoji) - 1
                 if emoji == '*⃣':
                     if flg == 0:
-                        # NOTE: 募集が9時間まで前提のフラグ
-                        members[user_id] = 0b111111111
+                        if self.is_rookie(user):
+                            for i in range(recruit_count):
+                                if int(recruit['rookie_count'][i]) < self.max_rookie_count:
+                                    recruit['rookie_count'][i] += 1
+                                    members[user_id] = members[user_id] ^ (1 << i)
+                        else:
+                            # NOTE: 募集が9時間まで前提のフラグ
+                            members[user_id] = 0b111111111
                     else:
+                        if self.is_rookie(user):
+                            for i in range(recruit_count):
+                                if bin(1 << i) == bin(flg & (1 << i)):
+                                    recruit['rookie_count'][i] -= 1
                         members[user_id] = 0
                         members.pop(user_id)
                 else:
-                    emoji_index = self.reactions.index(emoji) - 1
-                    members[user_id] = flg ^ (1 << emoji_index)
+                    if self.is_rookie(user):
+                        # 参加済みか？
+                        if bin(1 << emoji_index) == bin(flg & (1 << emoji_index)):
+                            members[user_id] = flg ^ (1 << emoji_index)
+                            recruit['rookie_count'][emoji_index] -= 1
+                        else:
+                            if int(recruit['rookie_count'][emoji_index]) < self.max_rookie_count:
+                                recruit['rookie_count'][emoji_index] += 1
+                                members[user_id] = flg ^ (1 << emoji_index)
+                    else:
+                        members[user_id] = flg ^ (1 << emoji_index)
 
                 self.update_recruit()
                 await update_embed()
