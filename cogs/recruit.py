@@ -25,9 +25,6 @@ class Recruit(commands.Cog):
         with self.RECRUIT_FILE.open() as f:
             self.RECRUITS = json.loads(f.read())
 
-        if 'msg_id' not in self.RECRUITS:
-            self.RECRUITS['msg_id'] = {}
-
     @commands.Cog.listener()
     async def on_ready(self):
         await self.watch_all_recruits()
@@ -40,7 +37,7 @@ class Recruit(commands.Cog):
     async def watch_all_recruits(self) -> None:
         '''全ての募集の監視を行なう'''
         cors = [self.watch_recruit(k, v)
-                for k, v in self.RECRUITS['msg_id'].items()]
+                for k, v in self.RECRUITS.items()]
         results = await asyncio.gather(*cors)
         return results
 
@@ -74,8 +71,8 @@ class Recruit(commands.Cog):
         embed.description = "準備中だ…少し待て"
         await msg.edit(embed=embed)
         # 募集がなければ追加
-        if msg_id not in self.RECRUITS['msg_id']:
-            self.RECRUITS['msg_id'][msg_id] = {
+        if msg_id not in self.RECRUITS:
+            self.RECRUITS[msg_id] = {
                 'channel_id': msg.channel.id,
                 'members': {}
             }
@@ -105,7 +102,7 @@ class Recruit(commands.Cog):
                 mask = 1 << i
                 value = ""
                 count = 0
-                members = self.RECRUITS['msg_id'][msg_id]['members']
+                members = self.RECRUITS[msg_id]['members']
                 for k, v in members.items():
                     if (v & mask) == mask:
                         # TODO: 役職でどうこうするならここ
@@ -149,7 +146,7 @@ class Recruit(commands.Cog):
                 break
             else:
                 # 未参加のユーザーを追加
-                members = self.RECRUITS['msg_id'][msg_id]['members']
+                members = self.RECRUITS[msg_id]['members']
                 user_id = str(user.id)
                 if user_id not in members:
                     members[user_id] = 0
@@ -191,8 +188,8 @@ class Recruit(commands.Cog):
     #     msg = await ctx.send(embed=embed)
     #     msg_id = str(msg.id)
     #     # 募集がなければ追加
-    #     if msg_id not in self.RECRUITS['msg_id']:
-    #         self.RECRUITS['msg_id'][msg_id] = {
+    #     if msg_id not in self.RECRUITS:
+    #         self.RECRUITS[msg_id] = {
     #             'channel_id': msg.channel.id,
     #             'members': {}
     #         }
@@ -210,7 +207,7 @@ class Recruit(commands.Cog):
     #             mask = 1 << i
     #             value = ""
     #             count = 0
-    #             members = self.RECRUITS['msg_id'][msg_id]['members']
+    #             members = self.RECRUITS[msg_id]['members']
     #             for k, v in members.items():
     #                 if (v & mask) == mask:
     #                     # TODO: 役職でどうこうするならここ
@@ -262,7 +259,7 @@ class Recruit(commands.Cog):
     #             break
     #         else:
     #             # 未参加のユーザーを追加
-    #             members = self.RECRUITS['msg_id'][msg_id]['members']
+    #             members = self.RECRUITS[msg_id]['members']
     #             user_id = str(user.id)
     #             if user_id not in members:
     #                 members[user_id] = 0
