@@ -160,7 +160,7 @@ class Recruit(commands.Cog):
             embed.clear_fields()
             recruit = self.RECRUITS[msg_id]
             for i in range(recruit_count):
-                base_time = self.CONFIG['start_time'] + i
+                base_time = recruit['start_time'] + i
                 name = f"{self.CONFIG['reactions'][i+1]} {base_time}時〜{base_time+1}時"
                 value = ""
                 section = recruit['sections'][i]
@@ -188,9 +188,11 @@ class Recruit(commands.Cog):
         self.update_recruit()
         await update_embed()
 
-        # TODO: 残り時間をちゃんと算出する
-        # remaining_time = 24 * 60 * 60
-        remaining_time = 24
+        # 残り時間を算出
+        expires = datetime.datetime(dt.year, dt.month, dt.day, st)
+        expires += datetime.timedelta(hours=recruit_count)
+        now = datetime.datetime.now()
+        remaining_time = (expires - now).total_seconds()
 
         # リアクション待機ループ
         while not self.bot.is_closed():
