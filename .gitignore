@@ -104,6 +104,8 @@ venv.bak/
 .mypy_cache/
 
 # データ
+data/json/config.json
+data/json/recruit.json
 data/img/output.png
 !data/csv/pokemon_data.csv
 data/csv/recruit_channels.csv
