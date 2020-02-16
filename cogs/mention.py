@@ -20,7 +20,7 @@ class Mention(commands.Cog):
                 '大丈夫。あなたを傷つける者、私とデスが全部、消す……から'
             ]
 
-            message.channel.send(
+            await message.channel.send(
                 f"{message.author.mention} {random.choice(serifs)}")
 
 
