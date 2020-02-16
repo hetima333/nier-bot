@@ -276,11 +276,6 @@ class Recruit(commands.Cog):
             return True
         return False
 
-    @commands.command()
-    async def foo(self, ctx):
-        await self.create_recruit(ctx.channel.id)
-        await self.watch_all_recruits()
-
 
 def setup(bot):
     bot.add_cog(Recruit(bot))
