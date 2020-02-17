@@ -66,12 +66,24 @@ class Recruit(commands.Cog):
             return
 
         # 現在の時刻
-        now = datetime.datetime.now().strftime('%H:%M')
+        now = datetime.datetime.now()
+        date = now.strftime('%m/%d')
 
-        if now == f"{self.CONFIG['send_time']}":
+        # 同日なら返す
+        if date == self.CONFIG['last_send_date']:
+            return
+
+        dt_str = now.strftime('%Y/%m/%d')
+        dt_str += f" {self.CONFIG['send_time']}"
+        dt = datetime.datetime.strptime(dt_str, '%Y/%m/%d %H:%M')
+
+        # 現時刻を超えていたら募集を始める
+        if now > dt:
             print("募集投稿の開始")
             for v in self.CONFIG['send_channel_id']:
                 await self.create_recruit(v)
+            self.CONFIG['last_send_date'] = date
+            self.update_config()
             await self.watch_all_recruits()
 
     async def create_recruit(self, channel_id: int) -> None:

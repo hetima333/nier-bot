@@ -19,18 +19,18 @@ class Nier(commands.Bot):
             fetch_offline_members=False,
         )
 
+    # 起動時のイベント
+    async def on_ready(self):
+        print(f'Ready: {self.user} (ID: {self.user.id})')
+        activity = discord.Game('死ト愛ノ世界')
+        await self.change_presence(activity=activity)
+
         # 拡張機能の読み込み
         for extention in extentions.extentions:
             try:
                 self.load_extension(f'cogs.{extention}')
             except Exception:
                 traceback.print_exc()
-
-    # 起動時のイベント
-    async def on_ready(self):
-        print(f'Ready: {self.user} (ID: {self.user.id})')
-        activity = discord.Game('死ト愛ノ世界')
-        await self.change_presence(activity=activity)
 
     # Botを起動させる
     def run(self):
