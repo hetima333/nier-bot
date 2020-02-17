@@ -63,18 +63,15 @@ class Recruit(commands.Cog):
     @tasks.loop(seconds=60)
     async def loop(self) -> None:
         if self.CONFIG['is_pause']:
-            print('一時停止中')
             return
 
         # 現在の時刻
         now = datetime.datetime.now().strftime('%H:%M')
-        print(now)
-
-        print(self.CONFIG)
 
         if now == f"{self.CONFIG['send_time']}":
-            await self.create_recruit(self.CONFIG['send_channel_id'][0])
-            await self.create_recruit(self.CONFIG['send_channel_id'][1])
+            print("募集投稿の開始")
+            for v in self.CONFIG['send_channel_id']:
+                await self.create_recruit(v)
             await self.watch_all_recruits()
 
     async def create_recruit(self, channel_id: int) -> None:
@@ -124,7 +121,8 @@ class Recruit(commands.Cog):
         try:
             channel = self.bot.get_channel(channel_id) or (await self.bot.fetch_channel(channel_id))
             msg = await channel.fetch_message(msg_id)
-        except discord.HTTPException:
+        except discord.HTTPException as e:
+            print(e)
             return
         # リアクションを一旦全部消す
         await msg.clear_reactions()
