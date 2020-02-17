@@ -63,10 +63,14 @@ class Recruit(commands.Cog):
     @tasks.loop(seconds=60)
     async def loop(self) -> None:
         if self.CONFIG['is_pause']:
+            print('一時停止中')
             return
 
         # 現在の時刻
         now = datetime.datetime.now().strftime('%H:%M')
+        print(now)
+
+        print(self.CONFIG)
 
         if now == f"{self.CONFIG['send_time']}":
             await self.create_recruit(self.CONFIG['send_channel_id'][0])
@@ -77,7 +81,8 @@ class Recruit(commands.Cog):
         # メッセージを送る
         try:
             channel = self.bot.get_channel(channel_id) or (await self.bot.fetch_channel(channel_id))
-        except discord.HTTPException:
+        except discord.HTTPException as e:
+            print(e)
             return
 
         now = datetime.datetime.now()
