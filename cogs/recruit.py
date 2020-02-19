@@ -25,12 +25,15 @@ class Recruit(commands.Cog):
         # 定刻募集用ループ
         self.loop.start()
 
+        # 監視中タスクリスト
+        self.watched_tasks = None
+
+        # 既に存在している募集を監視
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.watch_all_recruits())
+
     def cog_unload(self):
         self.loop.cancel()
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        await self.watch_all_recruits()
 
     def update_config(self) -> None:
         '''設定ファイルの更新'''
@@ -60,24 +63,45 @@ class Recruit(commands.Cog):
         self.CONFIG['is_pause'] = True
         self.update_config()
 
+    @commands.command()
+    async def check_recruit(self, ctx):
+        '''募集チェック関数'''
+        await ctx.channel.send("募集内容のチェックを始める…よ…")
+        await self.watch_all_recruits()
+        await ctx.channel.send("募集内容のチェックが終わった…よ…\n上手くできたかな…？")
+
     @tasks.loop(seconds=60)
     async def loop(self) -> None:
         if self.CONFIG['is_pause']:
             return
 
         # 現在の時刻
-        now = datetime.datetime.now().strftime('%H:%M')
+        now = datetime.datetime.now()
+        date = now.strftime('%m/%d')
 
-        if now == f"{self.CONFIG['send_time']}":
-            await self.create_recruit(self.CONFIG['send_channel_id'][0])
-            await self.create_recruit(self.CONFIG['send_channel_id'][1])
+        # 同日なら返す
+        if date == self.CONFIG['last_send_date']:
+            return
+
+        dt_str = now.strftime('%Y/%m/%d')
+        dt_str += f" {self.CONFIG['send_time']}"
+        dt = datetime.datetime.strptime(dt_str, '%Y/%m/%d %H:%M')
+
+        # 現時刻を超えていたら募集を始める
+        if now > dt:
+            print("募集投稿の開始")
+            for v in self.CONFIG['send_channel_id']:
+                await self.create_recruit(v)
+            self.CONFIG['last_send_date'] = date
+            self.update_config()
             await self.watch_all_recruits()
 
     async def create_recruit(self, channel_id: int) -> None:
         # メッセージを送る
         try:
             channel = self.bot.get_channel(channel_id) or (await self.bot.fetch_channel(channel_id))
-        except discord.HTTPException:
+        except discord.HTTPException as e:
+            print(e)
             return
 
         now = datetime.datetime.now()
@@ -107,10 +131,21 @@ class Recruit(commands.Cog):
 
     async def watch_all_recruits(self) -> None:
         '''全ての募集の監視を行なう'''
-        cors = [self.watch_recruit(k, v)
-                for k, v in self.RECRUITS.items()]
-        results = await asyncio.gather(*cors)
-        return results
+        # 監視中のタスクがあれば全てキャンセル
+        if self.watched_tasks is not None:
+            for t in self.watched_tasks:
+                if t.done() is not True:
+                    t.cancel()
+                    try:
+                        await t
+                    except asyncio.CancelledError:
+                        pass
+        loop = asyncio.get_event_loop()
+        tasks = [loop.create_task(self.watch_recruit(k, v))
+                 for k, v in self.RECRUITS.items()]
+
+        # 監視中タスクにする
+        self.watched_tasks = tasks
 
     async def watch_recruit(self, msg_id: str, data) -> None:
         '''募集の監視を行なう'''
@@ -119,7 +154,8 @@ class Recruit(commands.Cog):
         try:
             channel = self.bot.get_channel(channel_id) or (await self.bot.fetch_channel(channel_id))
             msg = await channel.fetch_message(msg_id)
-        except discord.HTTPException:
+        except discord.HTTPException as e:
+            print(e)
             return
         # リアクションを一旦全部消す
         await msg.clear_reactions()
@@ -138,11 +174,6 @@ class Recruit(commands.Cog):
         embed = discord.Embed(title=title, color=0x8080c0)
         embed.description = "準備してるから…少し待って…ね"
         await msg.edit(embed=embed)
-
-        if recruit_count > 1:
-            await msg.add_reaction('*⃣')
-        for i in range(recruit_count):
-            await msg.add_reaction(self.CONFIG['reactions'][i+1])
 
         def check(payload):
             emoji = str(payload.emoji)
@@ -182,47 +213,54 @@ class Recruit(commands.Cog):
                 embed.add_field(name=name, value=value, inline=False)
             await msg.edit(embed=embed)
 
-        embed.description = "時間帯に対応した番号で参加・キャンセル"
-        if st != et - 1:
-            embed.description += "\n:asterisk:で全ての時間帯に参加・キャンセルできるよ…"
-        self.update_recruit()
-        await update_embed()
-
         # 残り時間を算出
         expires = datetime.datetime(dt.year, dt.month, dt.day, st)
         expires += datetime.timedelta(hours=recruit_count)
         now = datetime.datetime.now()
         remaining_time = (expires - now).total_seconds()
 
-        # リアクション待機ループ
-        while not self.bot.is_closed():
-            try:
-                # NOTE: reaction_add だとメッセージがキャッシュにないと実行されない
-                # https://discordpy.readthedocs.io/ja/latest/api.html?highlight=wait_for#discord.on_reaction_add
-                payload = await self.bot.wait_for(
-                    'raw_reaction_add',
-                    timeout=remaining_time,
-                    check=check)
-                member = payload.member
-                emoji = str(payload.emoji)
-            except asyncio.TimeoutError:
-                break
-            else:
-                # NOTE: 押された番号
-                emoji_index = self.CONFIG['reactions'].index(emoji) - 1
-                recruit = self.RECRUITS[msg_id]
-                if emoji_index < 0:
-                    self.join_or_cancel_all_recruit(msg_id, member)
-                else:
-                    self.join_or_cancel_recruit(msg_id, emoji_index, member)
+        if remaining_time > 0:
+            if recruit_count > 1:
+                await msg.add_reaction('*⃣')
+            for i in range(recruit_count):
+                await msg.add_reaction(self.CONFIG['reactions'][i+1])
 
-                self.update_recruit()
-                await update_embed()
-                await msg.remove_reaction(emoji, member)
+            embed.description = "時間帯に対応した番号で参加・キャンセル"
+            if st != et - 1:
+                embed.description += "\n:asterisk:で全ての時間帯に参加・キャンセルできるよ…"
+            await update_embed()
+
+            # リアクション待機ループ
+            while not self.bot.is_closed():
+                try:
+                    # NOTE: reaction_add だとメッセージがキャッシュにないと実行されない
+                    # https://discordpy.readthedocs.io/ja/latest/api.html?highlight=wait_for#discord.on_reaction_add
+                    payload = await self.bot.wait_for(
+                        'raw_reaction_add',
+                        timeout=remaining_time,
+                        check=check)
+                    member = payload.member
+                    emoji = str(payload.emoji)
+                except asyncio.TimeoutError:
+                    break
+                else:
+                    # NOTE: 押された番号
+                    emoji_index = self.CONFIG['reactions'].index(emoji) - 1
+                    recruit = self.RECRUITS[msg_id]
+                    if emoji_index < 0:
+                        self.join_or_cancel_all_recruit(msg_id, member)
+                    else:
+                        self.join_or_cancel_recruit(
+                            msg_id, emoji_index, member)
+
+                    self.update_recruit()
+                    await update_embed()
+                    await msg.remove_reaction(emoji, member)
 
         embed.description = "この募集は終了したよ…"
+        embed.color = 0x333333
         await msg.clear_reactions()
-        await msg.edit(embed=embed)
+        await update_embed()
 
         # 募集が終わったので削除する
         # NOTE: 2重監視されている場合はここでKeyError
@@ -241,7 +279,8 @@ class Recruit(commands.Cog):
         '''
         sections = self.RECRUITS[str(msg_id)]['sections']
         section_cnt = len(sections)
-        joined_list = [x for x in range(section_cnt) if member.id in sections[x]['members']]
+        joined_list = [x for x in range(
+            section_cnt) if member.id in sections[x]['members']]
         if len(joined_list) > 0:
             # 全ての参加済みの募集から抜ける
             for index in joined_list:
