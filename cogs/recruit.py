@@ -213,7 +213,7 @@ class Recruit(commands.Cog):
                 elif count == 5:
                     value = f':white_check_mark: 参加者が揃ったよ…\n{value}'
                 else:
-                    value = f':eyes: あと {5 - count} 人足りないよ…\n{value}'
+                    value = f':broken_heart: あと {5 - count} 人足りないよ…\n{value}'
 
                 embed.add_field(name=name, value=value, inline=False)
             await msg.edit(embed=embed)
