@@ -197,8 +197,13 @@ class Recruit(commands.Cog):
                 section = recruit['sections'][i]
                 count = len(section['members'])
                 for member_id in section['members']:
+                    user = self.bot.get_user(member_id)
+                    if user is not None:
+                        user_name = user.display_name
+                    else:
+                        user_name = ""
                     # TODO: 役職でどうこうするならここ
-                    value += f'<@!{member_id}>\n'
+                    value += f'<@!{member_id}>（{user_name}）\n'
                 # TODO: 若葉カウントは都度計算？
                 name += f"（🍀️： {section['rookie_cnt']}/{self.CONFIG['max_rookie_cnt']}）"
                 # 人数によって絵文字切り替え
