@@ -300,6 +300,9 @@ class Recruit(commands.Cog):
         section = self.RECRUITS[str(msg_id)]['sections'][index]
         # 参加の場合
         if member.id not in section['members']:
+            # 別の募集に参加済みなら参加しない
+            if self.is_already_joined(index, member, msg_id):
+                return
             if self.is_rookie(member):
                 if section['rookie_cnt'] >= self.CONFIG['max_rookie_cnt']:
                     return
@@ -319,6 +322,50 @@ class Recruit(commands.Cog):
         if len(roles) > 0:
             return True
         return False
+
+    def is_already_joined(
+            self, index: int, member: discord.Member, ignore_msg_id=0) -> bool:
+        '''既に同じ時間に参加済みか？'''
+        for k, v in self.RECRUITS.items():
+            if k == str(ignore_msg_id):
+                continue
+            sections = v['sections']
+            if member.id in sections[index]['members']:
+                return True
+        return False
+
+    @commands.command()
+    async def ar(self, ctx):
+        embed = discord.Embed(color=config.DEFAULT_EMBED_COLOR)
+        # embed.title = "00/00 00時〜00時の放置狩り募集だよ… "
+        embed.description = "時間帯に対応した番号で参加・キャンセル"
+
+        embed.set_author(
+            name="00/00 00時〜00時の放置狩り募集だよ…",
+            icon_url=self.bot.user.avatar_url)
+
+        recruit_count = 5
+        t = 21
+        for i in range(recruit_count):
+            # if i % 2 != 0:
+            #     continue
+            # if recruit_count % 2 != 0 and i+1 == recruit_count:
+            #     v = "\a"
+            # else:
+            #     v = f"{self.CONFIG['reactions'][i+2]} {t+1}時〜{t+2}時"
+            embed.add_field(
+                name=f"{self.CONFIG['reactions'][i+1]} {t}時〜{t+1}時",
+                value="参加人数：9 人、卓成立まであと **1** 人",
+                inline=False
+            )
+            t += 1
+
+        msg = await ctx.channel.send(embed=embed)
+
+        if recruit_count > 1:
+            await msg.add_reaction('*⃣')
+        for i in range(recruit_count):
+            await msg.add_reaction(self.CONFIG['reactions'][i+1])
 
 
 def setup(bot):
