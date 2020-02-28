@@ -301,7 +301,7 @@ class Recruit(commands.Cog):
         # 参加の場合
         if member.id not in section['members']:
             # 別の募集に参加済みなら参加しない
-            if self.is_already_joined(index, member):
+            if self.is_already_joined(index, member, msg_id):
                 return
             if self.is_rookie(member):
                 if section['rookie_cnt'] >= self.CONFIG['max_rookie_cnt']:
@@ -323,14 +323,15 @@ class Recruit(commands.Cog):
             return True
         return False
 
-    def is_already_joined(self, index: int, member: discord.Member) -> bool:
+    def is_already_joined(
+            self, index: int, member: discord.Member, ignore_msg_id=0) -> bool:
         '''既に同じ時間に参加済みか？'''
-        # TODO: for使いすぎなので書き直す
-        for v in self.RECRUITS:
+        for k, v in self.RECRUITS.items():
+            if k == str(ignore_msg_id):
+                continue
             sections = v['sections']
-            for s in sections:
-                if member.id in s['members']:
-                    return True
+            if member.id in sections[index]['members']:
+                return True
         return False
 
     @commands.command()
@@ -356,7 +357,7 @@ class Recruit(commands.Cog):
                 name=f"{self.CONFIG['reactions'][i+1]} {t}時〜{t+1}時",
                 value="参加人数：9 人、卓成立まであと **1** 人",
                 inline=False
-                )
+            )
             t += 1
 
         msg = await ctx.channel.send(embed=embed)
