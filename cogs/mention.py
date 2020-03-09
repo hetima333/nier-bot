@@ -2,6 +2,8 @@ from discord.ext import commands
 import discord
 import random
 
+import config
+
 
 class Mention(commands.Cog):
     def __init__(self, bot):
@@ -22,6 +24,16 @@ class Mention(commands.Cog):
 
             await message.channel.send(
                 f"{message.author.mention} {random.choice(serifs)}")
+
+        if message.content == 'シート':
+            embed = discord.Embed(color=config.DEFAULT_EMBED_COLOR)
+            embed.set_author(
+                name='シート',
+                icon_url=self.bot.user.avatar_url)
+            embed.description = f"[放置狩りシート](https://docs.google.com/spreadsheets/d/1Zt-3rUv3m8fOJJyQAKpyC9qiFopBMXeQGSRYiLvFWjM/edit#gid=0)"
+            await message.channel.send(
+                f"{message.author.mention} シートのリンクだ…よ",
+                embed=embed)
 
 
 def setup(bot):
