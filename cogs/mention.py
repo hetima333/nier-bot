@@ -75,9 +75,9 @@ class Mention(commands.Cog):
             # 送信するメッセージの作成
             send_msg = f"{' '.join([m.mention for m in users])}\n"
             if base_msg.id == reaction_msg.id:
-                send_msg += base_msg.content
+                send_msg += base_msg.clean_content
             else:
-                send_msg += f'{base_msg.content}\n{reaction_msg.content}'
+                send_msg += f'{base_msg.clean_content}\n{reaction_msg.clean_content}'
             send_msg += ' の参加者が揃った…よ'
             await send_channel.send(send_msg)
 
