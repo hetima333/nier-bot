@@ -49,8 +49,9 @@ class Mention(commands.Cog):
         # メッセージの取得
         reaction_msg = await channel.fetch_message(payload.message_id)
 
+        reaction = str(payload.emoji)
         # リアクション数判定
-        reactions = [r for r in reaction_msg.reactions if r.count == 5]
+        reactions = [r for r in reaction_msg.reactions if r.count == 5 and str(r.emoji) == reaction]
         if len(reactions) < 1:
             return
 
