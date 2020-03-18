@@ -74,13 +74,17 @@ class Mention(commands.Cog):
             base_msg = msg
             users = await reactions[0].users().flatten()
             # 送信するメッセージの作成
+            embed = discord.Embed(color=config.DEFAULT_EMBED_COLOR)
+            embed.set_author(
+                name="以下の募集の参加者が揃った…よ",
+                icon_url=self.bot.user.avatar_url)
             send_msg = f"{' '.join([m.mention for m in users])}\n"
             if base_msg.id == reaction_msg.id:
-                send_msg += base_msg.clean_content
+                embed.description = base_msg.clean_content
             else:
-                send_msg += f'{base_msg.clean_content}\n{reaction_msg.clean_content}'
-            send_msg += ' の参加者が揃った…よ'
-            await send_channel.send(send_msg)
+                embed.description = f'{base_msg.clean_content}\n{reaction_msg.clean_content}'
+
+            await send_channel.send(send_msg, embed=embed)
 
             break
 
