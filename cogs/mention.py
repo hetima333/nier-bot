@@ -73,6 +73,10 @@ class Mention(commands.Cog):
             send_channel = msg.channel_mentions[0]
             base_msg = msg
             users = await reactions[0].users().flatten()
+            # 募集主が含まれていなければ追加する
+            if msg.author not in users:
+                users.pop(-1)
+                users.append(msg.author)
             # 送信するメッセージの作成
             embed = discord.Embed(color=config.DEFAULT_EMBED_COLOR)
             embed.set_author(
