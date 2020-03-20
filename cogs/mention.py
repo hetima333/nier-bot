@@ -51,7 +51,7 @@ class Mention(commands.Cog):
 
         reaction = str(payload.emoji)
         # リアクション数判定
-        reactions = [r for r in reaction_msg.reactions if r.count == 5 and str(r.emoji) == reaction]
+        reactions = [r for r in reaction_msg.reactions if r.count == 4 and str(r.emoji) == reaction]
         if len(reactions) < 1:
             return
 
@@ -73,10 +73,8 @@ class Mention(commands.Cog):
             send_channel = msg.channel_mentions[0]
             base_msg = msg
             users = await reactions[0].users().flatten()
-            # 募集主が含まれていなければ追加する
-            if msg.author not in users:
-                users.pop(-1)
-                users.append(msg.author)
+            # 募集主を追加する
+            users.append(msg.author)
             # 送信するメッセージの作成
             embed = discord.Embed(color=config.DEFAULT_EMBED_COLOR)
             embed.set_author(
