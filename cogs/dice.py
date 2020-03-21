@@ -46,7 +46,7 @@ class DiceRoll(commands.Cog, name='ダイス'):
                 text = symbol
                 text += "+".join([str(v) for v in roll])
             else:
-                text = f"{symbol} {r.group('value')}"
+                text = f"{symbol}{r.group('value')}"
 
             # 末尾に空白を入れておく
             result["text"] += f"{text}"
