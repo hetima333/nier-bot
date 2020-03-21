@@ -63,8 +63,9 @@ class DiceRoll(commands.Cog, name='ダイス'):
 
     async def send_dice_roll(self, ctx, arg: str = '1d100'):
         result = self.get_dice_result(arg)
-        msg = f"```{arg} = {result['text']} = {result['value']}```"
-        await ctx.channel.send(f'{ctx.author.mention}\n{msg}')
+        msg = f"{ctx.author.mention} ダイスロールの結果…だよ\n"
+        msg += f"```{arg.strip()} = {result['text']} = {result['value']}```"
+        await ctx.channel.send(msg)
 
     def roll_dice(self, face, num):
         results = []
