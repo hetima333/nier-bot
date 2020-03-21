@@ -8,6 +8,8 @@ from discord.ext import commands
 class DiceRoll(commands.Cog, name='ダイス'):
     def __init__(self, bot):
         self.bot = bot
+        # NOTE: 一旦加減算のみ
+        self.dice_re = re.compile(r'(?P<symbol>\+|\-)?((?P<num>\d{1,2})?d(?P<face>\d{1,3}))?(?P<value>\d{1,3})?')
 
     @commands.command(usage='1d6 など', aliases=["r"])
     async def roll(self, ctx, *, arg: str = '1d100'):
@@ -16,35 +18,58 @@ class DiceRoll(commands.Cog, name='ダイス'):
         例えば、6面ダイスを1回振りたい時は -r 1d6 になるわ
         -r とだけすると、1d100を振るわ
         '''
-        await self._send_dice_roll_result(ctx, arg)
+        # await self._send_dice_roll_result(ctx, arg)
+        await self.send_dice_roll(ctx, arg)
 
-    async def _send_dice_roll_result(self, ctx, arg: str = '1d100'):
-        dice_reg = r'(?P<num>\d{1,})d(?P<face>\d{1,})'
-        reg_result = re.search(dice_reg, arg)
+    def get_dice_result(self, src):
+        itr = self.dice_re.finditer(src)
+        result = {
+            "value": 0,
+            "text": ""
+        }
+        for r in itr:
+            symbol = r.group('symbol')
+            # NOTE: 演算子がなければ+とする
+            if symbol is None:
+                symbol = '+'
 
-        # xdy形式ではないときは警告を返信する
-        if reg_result is None:
-            await ctx.channel.send(f'{ctx.author.mention}\n\
-                指定方法が間違っている…よ\n例えば、6面ダイスを1回振りたい時は`!!r 1d6`になる…よ')
-            return
+            # 修正値でなければダイスロールを行う
+            if r.group('value') is None:
+                if r.group('face') is None:
+                    continue
+                num = 1
+                face = r.group('face')
+                # d6などの回数指定なしのダイスは1回にする
+                if r.group('num') is not None:
+                    num = int(r.group('num'))
+                roll = self.roll_dice(face, num)
+                text = symbol
+                text += "+".join([str(v) for v in roll])
+            else:
+                text = f"{symbol} {r.group('value')}"
 
-        num = int(reg_result.group('num'))
-        face = int(reg_result.group('face'))
-        mes = f'```\n{num}d{face} = '
-        result = 0
-        for item in self._roll_dice(face, num):
-            mes += f'{item} + '
-            result += item
-        # 最後に末尾の' + 'を削除する
-        mes = mes[:-3]
-        mes += f' = {result}\n```'
-        # 連投されたときに誰のダイスロールかわからなくなるので、メンションをつける
-        await ctx.channel.send(f'{ctx.author.mention}\n{mes}')
+            # 末尾に空白を入れておく
+            result["text"] += f"{text}"
+            result["value"] = eval(f"{result['value']}{text}")
 
-    def _roll_dice(self, face, num):
+        # 最初の+だけ削除
+        if result["text"].startswith('+'):
+            result["text"] = result["text"].lstrip('+')
+
+        # if result["text"] == "":
+        #     return None
+
+        return result
+
+    async def send_dice_roll(self, ctx, arg: str = '1d100'):
+        result = self.get_dice_result(arg)
+        msg = f"```{arg} = {result['text']} = {result['value']}```"
+        await ctx.channel.send(f'{ctx.author.mention}\n{msg}')
+
+    def roll_dice(self, face, num):
         results = []
         for i in range(num):
-            dice = random.randint(1, face)
+            dice = random.randint(1, int(face))
             results.append(dice)
 
         return results
