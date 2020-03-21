@@ -3,5 +3,6 @@
 extentions = (
     # 'update',
     'recruit',
-    'mention'
+    'mention',
+    'dice'
 )
