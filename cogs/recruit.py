@@ -22,6 +22,8 @@ class Recruit(commands.Cog):
         with self.RECRUIT_FILE.open() as f:
             self.RECRUITS = json.loads(f.read())
 
+        self.RECRUIT_REG = re.compile(r"(?P<start>\d{1,2})時\D*(?P<end>\d{1,2})時")
+
         # 定刻募集用ループ
         self.loop.start()
 
@@ -91,12 +93,50 @@ class Recruit(commands.Cog):
         if now > dt:
             print("募集投稿の開始")
             for v in self.CONFIG['send_channel_id']:
-                await self.create_recruit(v)
+                await self.create_recruit(
+                    v,
+                    self.CONFIG['start_time'],
+                    self.CONFIG['end_time'])
             self.CONFIG['last_send_date'] = date
             self.update_config()
             await self.watch_all_recruits()
 
-    async def create_recruit(self, channel_id: int) -> None:
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.author.bot:
+            return
+
+        # 特定のチャンネルのみ
+        if message.channel.id != 686701653369683994:
+            return
+
+        result = self.RECRUIT_REG.search(message.clean_content)
+        if result is None:
+            return
+        start_time = int(result.group('start'))
+        end_time = int(result.group('end'))
+
+        # TODO: 分単位の募集の対応
+
+        if start_time >= end_time:
+            return
+
+        # 既に時間を過ぎていて、12時以下なら+12時間する
+        now = datetime.datetime.now()
+        if now.hour > start_time:
+            if start_time < 12:
+                start_time += 12
+                end_time += 12
+
+        # 募集メッセージか？
+        # TODO: メッセージ削除で募集の削除ができるように
+        msg = await self.create_recruit(message.channel.id, start_time, end_time)
+        await self.watch_all_recruits()
+        self.join_or_cancel_all_recruit(msg.id, message.author)
+
+    async def create_recruit(
+            self, channel_id: int,
+            start_time: int, end_time: int) -> discord.Message:
         # メッセージを送る
         try:
             channel = self.bot.get_channel(channel_id) or (await self.bot.fetch_channel(channel_id))
@@ -106,28 +146,30 @@ class Recruit(commands.Cog):
 
         now = datetime.datetime.now()
         dt = now.date().strftime('%Y/%m/%d')
-        title = f"{now.month}/{now.day} {self.CONFIG['start_time']}時〜{self.CONFIG['end_time']}時の放置狩り募集だよ…"
+        title = f"{now.month}/{now.day} {start_time}時〜{end_time}時の放置狩り募集だよ…"
         embed = discord.Embed(title=title, color=0x8080c0)
         embed.description = "準備してるから…少し待って…ね"
         msg = await channel.send(embed=embed)
         msg_id = str(msg.id)
 
-        if self.CONFIG['start_time'] >= self.CONFIG['end_time']:
-            self.CONFIG['end_time'] += 24
-        recruit_count = self.CONFIG['end_time'] - self.CONFIG['start_time']
+        if start_time >= end_time:
+            end_time += 24
+        recruit_count = end_time - start_time
 
         # 募集がなければ追加
         if msg_id not in self.RECRUITS:
             self.RECRUITS[msg_id] = {
                 'date': dt,
-                'start_time': self.CONFIG['start_time'],
-                'end_time': self.CONFIG['end_time'],
+                'start_time': start_time,
+                'end_time': end_time,
                 'channel_id': channel.id,
                 'sections': [{'rookie_cnt': 0, 'members': []} for i in range(recruit_count)]
             }
 
         # jsonに記録
         self.update_recruit()
+
+        return msg
 
     async def watch_all_recruits(self) -> None:
         '''全ての募集の監視を行なう'''
@@ -301,7 +343,7 @@ class Recruit(commands.Cog):
         # 参加の場合
         if member.id not in section['members']:
             # 別の募集に参加済みなら参加しない
-            if self.is_already_joined(index, member, msg_id):
+            if self.is_already_joined(self.RECRUITS[str(msg_id)]['start_time'], index, member, msg_id):
                 return
             if self.is_rookie(member):
                 if section['rookie_cnt'] >= self.CONFIG['max_rookie_cnt']:
@@ -324,48 +366,22 @@ class Recruit(commands.Cog):
         return False
 
     def is_already_joined(
-            self, index: int, member: discord.Member, ignore_msg_id=0) -> bool:
+            self, start_time: int, index: int, member: discord.Member,
+            ignore_msg_id=0) -> bool:
         '''既に同じ時間に参加済みか？'''
+        _ignore_msg_id = str(ignore_msg_id)
         for k, v in self.RECRUITS.items():
-            if k == str(ignore_msg_id):
+            if k == _ignore_msg_id:
+                continue
+            if start_time < v['start_time'] and start_time > v['end_time']:
                 continue
             sections = v['sections']
-            if member.id in sections[index]['members']:
+            _index = index + start_time - v['start_time']
+            if _index < 0 or _index >= len(sections):
+                continue
+            if member.id in sections[_index]['members']:
                 return True
         return False
-
-    @commands.command()
-    async def ar(self, ctx):
-        embed = discord.Embed(color=config.DEFAULT_EMBED_COLOR)
-        # embed.title = "00/00 00時〜00時の放置狩り募集だよ… "
-        embed.description = "時間帯に対応した番号で参加・キャンセル"
-
-        embed.set_author(
-            name="00/00 00時〜00時の放置狩り募集だよ…",
-            icon_url=self.bot.user.avatar_url)
-
-        recruit_count = 5
-        t = 21
-        for i in range(recruit_count):
-            # if i % 2 != 0:
-            #     continue
-            # if recruit_count % 2 != 0 and i+1 == recruit_count:
-            #     v = "\a"
-            # else:
-            #     v = f"{self.CONFIG['reactions'][i+2]} {t+1}時〜{t+2}時"
-            embed.add_field(
-                name=f"{self.CONFIG['reactions'][i+1]} {t}時〜{t+1}時",
-                value="参加人数：9 人、卓成立まであと **1** 人",
-                inline=False
-            )
-            t += 1
-
-        msg = await ctx.channel.send(embed=embed)
-
-        if recruit_count > 1:
-            await msg.add_reaction('*⃣')
-        for i in range(recruit_count):
-            await msg.add_reaction(self.CONFIG['reactions'][i+1])
 
 
 def setup(bot):
