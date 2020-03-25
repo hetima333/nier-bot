@@ -36,52 +36,59 @@ class Mention(commands.Cog):
                 f"{message.author.mention} シートのリンクだ…よ",
                 embed=embed)
 
-    # @commands.Cog.listener()
-    # async def on_raw_reaction_add(self, payload):
-    #     # 指定チャンネル以外は無視
-    #     # TODO: 設定ファイルに避ける
-    #     if payload.channel_id != 686701653369683994:
-    #         return
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        # 指定チャンネル以外は無視
+        # TODO: 設定ファイルに避ける
+        if payload.channel_id != 686701653369683994:
+            return
 
-    #     channel = self.bot.get_channel(payload.channel_id)
-    #     if channel is None:
-    #         return
-    #     # メッセージの取得
-    #     reaction_msg = await channel.fetch_message(payload.message_id)
+        channel = self.bot.get_channel(payload.channel_id)
+        if channel is None:
+            return
+        # メッセージの取得
+        reaction_msg = await channel.fetch_message(payload.message_id)
 
-    #     # リアクション数判定
-    #     reactions = [r for r in reaction_msg.reactions if r.count == 5]
-    #     if len(reactions) < 1:
-    #         return
+        reaction = str(payload.emoji)
+        # リアクション数判定
+        reactions = [r for r in reaction_msg.reactions if r.count == 4 and str(r.emoji) == reaction]
+        if len(reactions) < 1:
+            return
 
-    #     send_channel = None
-    #     # NOTE: メッセージ履歴を1分後より前から検索するためのtimedelta
-    #     td = datetime.timedelta(minutes=1)
+        send_channel = None
+        # NOTE: メッセージ履歴を1分後より前から検索するためのtimedelta
+        td = datetime.timedelta(minutes=1)
 
-    #     # メッセージ履歴を取得
-    #     async for msg in channel.history(
-    #             limit=24,
-    #             before=reaction_msg.created_at + td):
-    #         if msg.author != reaction_msg.author:
-    #             continue
+        # メッセージ履歴を取得
+        async for msg in channel.history(
+                limit=24,
+                before=reaction_msg.created_at + td):
+            if msg.author != reaction_msg.author:
+                continue
 
-    #         if len(msg.channel_mentions) < 1:
-    #             continue
+            if len(msg.channel_mentions) < 1:
+                continue
 
-    #         # NOTE: 複数のメンションが含まれていたら困るけど対応できないので無視
-    #         send_channel = msg.channel_mentions[0]
-    #         base_msg = msg
-    #         users = await reactions[0].users().flatten()
-    #         # 送信するメッセージの作成
-    #         send_msg = f"{' '.join([m.mention for m in users])}\n"
-    #         if base_msg.id == reaction_msg.id:
-    #             send_msg += base_msg.content
-    #         else:
-    #             send_msg += f'{base_msg.content}\n{reaction_msg.content}'
-    #         send_msg += ' の参加者が揃った…よ'
-    #         await send_channel.send(send_msg)
+            # NOTE: 複数のメンションが含まれていたら困るけど対応できないので無視
+            send_channel = msg.channel_mentions[0]
+            base_msg = msg
+            users = await reactions[0].users().flatten()
+            # 募集主を追加する
+            users.append(msg.author)
+            # 送信するメッセージの作成
+            embed = discord.Embed(color=config.DEFAULT_EMBED_COLOR)
+            embed.set_author(
+                name="以下の募集の参加者が揃った…よ",
+                icon_url=self.bot.user.avatar_url)
+            send_msg = f"{' '.join([m.mention for m in users])}\n"
+            if base_msg.id == reaction_msg.id:
+                embed.description = base_msg.clean_content
+            else:
+                embed.description = f'{base_msg.clean_content}\n{reaction_msg.clean_content}'
 
-    #         break
+            await send_channel.send(send_msg, embed=embed)
+
+            break
 
 
 def setup(bot):
