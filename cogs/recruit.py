@@ -107,7 +107,7 @@ class Recruit(commands.Cog):
             return
 
         # 特定のチャンネルのみ
-        if message.channel.id != 500215831784062977:
+        if message.channel.id != 686701653369683994:
             return
 
         result = self.RECRUIT_REG.search(message.clean_content)
@@ -382,39 +382,6 @@ class Recruit(commands.Cog):
             if member.id in sections[_index]['members']:
                 return True
         return False
-
-    @commands.command()
-    async def ar(self, ctx):
-        embed = discord.Embed(color=config.DEFAULT_EMBED_COLOR)
-        # embed.title = "00/00 00時〜00時の放置狩り募集だよ… "
-        embed.description = "時間帯に対応した番号で参加・キャンセル"
-
-        embed.set_author(
-            name="00/00 00時〜00時の放置狩り募集だよ…",
-            icon_url=self.bot.user.avatar_url)
-
-        recruit_count = 5
-        t = 21
-        for i in range(recruit_count):
-            # if i % 2 != 0:
-            #     continue
-            # if recruit_count % 2 != 0 and i+1 == recruit_count:
-            #     v = "\a"
-            # else:
-            #     v = f"{self.CONFIG['reactions'][i+2]} {t+1}時〜{t+2}時"
-            embed.add_field(
-                name=f"{self.CONFIG['reactions'][i+1]} {t}時〜{t+1}時",
-                value="参加人数：9 人、卓成立まであと **1** 人",
-                inline=False
-            )
-            t += 1
-
-        msg = await ctx.channel.send(embed=embed)
-
-        if recruit_count > 1:
-            await msg.add_reaction('*⃣')
-        for i in range(recruit_count):
-            await msg.add_reaction(self.CONFIG['reactions'][i+1])
 
 
 def setup(bot):
