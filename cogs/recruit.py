@@ -192,13 +192,18 @@ class Recruit(commands.Cog):
     async def watch_recruit(self, msg_id: str, data) -> None:
         '''募集の監視を行なう'''
         channel_id = data['channel_id']
+        channel = self.bot.get_channel(channel_id) or (await self.bot.fetch_channel(channel_id))
+        if channel is None:
+            print("recruit channel not found")
+            return
         # 募集メッセージが消えていないかチェック
         try:
-            channel = self.bot.get_channel(channel_id) or (await self.bot.fetch_channel(channel_id))
             msg = await channel.fetch_message(msg_id)
-        except discord.HTTPException as e:
-            print(e)
-            return
+        except discord.NotFound as e:
+            print("recruit message not found")
+            # メッセージに該当する募集の削除
+            self.RECRUITS.pop(msg_id)
+            self.update_recruit()
         # リアクションを一旦全部消す
         await msg.clear_reactions()
 
