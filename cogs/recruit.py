@@ -79,21 +79,22 @@ class Recruit(commands.Cog):
 
         # 現在の時刻
         now = datetime.datetime.now()
-        date = now.strftime('%m/%d')
+        date = now.strftime('%Y/%m/%d')
 
         # 同日なら返す
         if date == self.CONFIG['last_send_date']:
             return
 
-        dt_str = now.strftime('%Y/%m/%d')
-        dt_str += f" {self.CONFIG['send_time']}"
-        dt = datetime.datetime.strptime(dt_str, '%Y/%m/%d %H:%M')
+        dt = datetime.datetime.strptime(
+            f"{date} {self.CONFIG['send_time']}",
+            '%Y/%m/%d %H:%M')
 
         # 現時刻を超えていたら募集を始める
         if now > dt:
             print("募集投稿の開始")
             for v in self.CONFIG['send_channel_id']:
                 await self.create_recruit(
+                    date,
                     v,
                     self.CONFIG['start_time'],
                     self.CONFIG['end_time'])
@@ -113,6 +114,10 @@ class Recruit(commands.Cog):
         result = self.RECRUIT_REG.search(message.clean_content)
         if result is None:
             return
+
+        # 現在の時刻
+        now = datetime.datetime.now()
+        date = now.strftime('%Y/%m/%d')
         start_time = int(result.group('start'))
         end_time = int(result.group('end'))
 
@@ -128,14 +133,19 @@ class Recruit(commands.Cog):
                 start_time += 12
                 end_time += 12
 
+        # 24時を超えないようにする
+        if start_time > 24:
+            start_time -= 24
+            end_time -= 24
+
         # 募集メッセージか？
         # TODO: メッセージ削除で募集の削除ができるように
-        msg = await self.create_recruit(message.channel.id, start_time, end_time)
+        msg = await self.create_recruit(message.channel.id, date, start_time, end_time)
         await self.watch_all_recruits()
         self.join_or_cancel_all_recruit(msg.id, message.author)
 
     async def create_recruit(
-            self, channel_id: int,
+            self, channel_id: int, date: str,
             start_time: int, end_time: int) -> discord.Message:
         # メッセージを送る
         try:
