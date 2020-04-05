@@ -22,7 +22,7 @@ class Recruit(commands.Cog):
         with self.RECRUIT_FILE.open() as f:
             self.RECRUITS = json.loads(f.read())
 
-        self.RECRUIT_REG = re.compile(r"(?P<start>\d{1,2})時\D*(?P<end>\d{1,2})時")
+        self.RECRUIT_REG = re.compile(r"(?P<month>0?\d|1[0-2])/(?P<day>[0-2]?\d|3[01])\D*(?P<start>\d{1,2})時\D*(?P<end>\d{1,2})時")
 
         # 定刻募集用ループ
         self.loop.start()
@@ -115,9 +115,6 @@ class Recruit(commands.Cog):
         if result is None:
             return
 
-        # 現在の時刻
-        now = datetime.datetime.now()
-        date = now.strftime('%Y/%m/%d')
         start_time = int(result.group('start'))
         end_time = int(result.group('end'))
 
@@ -126,17 +123,20 @@ class Recruit(commands.Cog):
         if start_time >= end_time:
             return
 
-        # 既に時間を過ぎていて、12時以下なら+12時間する
+        # 現在の時刻
         now = datetime.datetime.now()
-        if now.hour > start_time:
-            if start_time < 12:
-                start_time += 12
-                end_time += 12
-
+        dt = datetime.datetime(
+            now.year,
+            int(result.group('month')),
+            int(result.group('day'))
+        )
         # 24時を超えないようにする
         if start_time > 24:
             start_time -= 24
             end_time -= 24
+            dt += datetime.timedelta(days=1)
+
+        date = dt.strftime('%Y/%m/%d')
 
         # 募集メッセージか？
         # TODO: メッセージ削除で募集の削除ができるように
