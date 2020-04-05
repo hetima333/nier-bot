@@ -154,9 +154,8 @@ class Recruit(commands.Cog):
             print(e)
             return
 
-        now = datetime.datetime.now()
-        dt = now.date().strftime('%Y/%m/%d')
-        title = f"{now.month}/{now.day} {start_time}時〜{end_time}時の放置狩り募集だよ…"
+        dt = datetime.datetime.strptime(date, '%Y/%m/%d')
+        title = f"{dt.month}/{dt.day} {start_time}時〜{end_time}時の放置狩り募集だよ…"
         embed = discord.Embed(title=title, color=0x8080c0)
         embed.description = "準備してるから…少し待って…ね"
         msg = await channel.send(embed=embed)
