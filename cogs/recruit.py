@@ -94,8 +94,8 @@ class Recruit(commands.Cog):
             print("募集投稿の開始")
             for v in self.CONFIG['send_channel_id']:
                 await self.create_recruit(
-                    date,
                     v,
+                    date,
                     self.CONFIG['start_time'],
                     self.CONFIG['end_time'])
             self.CONFIG['last_send_date'] = date
@@ -168,7 +168,7 @@ class Recruit(commands.Cog):
         # 募集がなければ追加
         if msg_id not in self.RECRUITS:
             self.RECRUITS[msg_id] = {
-                'date': dt,
+                'date': date,
                 'start_time': start_time,
                 'end_time': end_time,
                 'channel_id': channel.id,
