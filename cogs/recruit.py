@@ -226,7 +226,7 @@ class Recruit(commands.Cog):
             return
 
         dt = datetime.datetime.strptime(data['date'], '%Y/%m/%d')
-        title = f'{dt.month}/{dt.day} {st}時〜{et}時の放置狩り募集だよ…'
+        title = f'{dt.month}/{dt.day} {st}時〜{et}時の自発消化募集だよ…'
         embed = discord.Embed(title=title, color=0x8080c0)
         embed.description = "準備してるから…少し待って…ね"
         await msg.edit(embed=embed)
