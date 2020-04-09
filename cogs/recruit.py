@@ -155,7 +155,7 @@ class Recruit(commands.Cog):
             return
 
         dt = datetime.datetime.strptime(date, '%Y/%m/%d')
-        title = f"{dt.month}/{dt.day} {start_time}時〜{end_time}時の放置狩り募集だよ…"
+        title = f"{dt.month}/{dt.day} {start_time}時〜{end_time}時の自発消化募集だよ…"
         embed = discord.Embed(title=title, color=0x8080c0)
         embed.description = "準備してるから…少し待って…ね"
         msg = await channel.send(embed=embed)
@@ -260,14 +260,10 @@ class Recruit(commands.Cog):
                         user_name = ""
                     # TODO: 役職でどうこうするならここ
                     value += f'<@!{member_id}>（{user_name}）\n'
-                # TODO: 若葉カウントは都度計算？
-                name += f"（🍀️： {section['rookie_cnt']}/{self.CONFIG['max_rookie_cnt']}）"
                 # 人数によって絵文字切り替え
                 # TODO: 人数によって色を変える
-                if count > 5:
-                    value = f':thinking_face: {count - 5} 人多いよ…\n{value}'
-                elif count == 5:
-                    value = f':white_check_mark: 参加者が揃ったよ…\n{value}'
+                if count >= 5:
+                    value = f':white_check_mark: 参加者が揃ったよ… 参加人数：{count}人\n{value}'
                 else:
                     value = f':broken_heart: あと {5 - count} 人足りないよ…\n{value}'
 
@@ -356,19 +352,9 @@ class Recruit(commands.Cog):
         section = self.RECRUITS[str(msg_id)]['sections'][index]
         # 参加の場合
         if member.id not in section['members']:
-            # 別の募集に参加済みなら参加しない
-            if self.is_already_joined(self.RECRUITS[str(msg_id)]['start_time'], index, member, msg_id):
-                return
-            if self.is_rookie(member):
-                if section['rookie_cnt'] >= self.CONFIG['max_rookie_cnt']:
-                    return
-                else:
-                    section['rookie_cnt'] += 1
             section['members'].append(member.id)
         # キャンセルの場合
         else:
-            if self.is_rookie(member):
-                section['rookie_cnt'] -= 1
             section['members'].remove(member.id)
 
     def is_rookie(self, member: discord.Member) -> bool:
