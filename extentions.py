@@ -4,5 +4,6 @@ extentions = (
     # 'update',
     'recruit',
     'mention',
-    'dice'
+    'dice',
+    'vocaloid_lyrics',
 )
