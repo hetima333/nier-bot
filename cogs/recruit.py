@@ -155,7 +155,7 @@ class Recruit(commands.Cog):
             return
 
         dt = datetime.datetime.strptime(date, '%Y/%m/%d')
-        title = f"{dt.month}/{dt.day} {start_time}時〜{end_time}時の自発消化募集だよ…"
+        title = f"{dt.month}/{dt.day} {start_time}時〜{end_time}時の募集だよ…"
         embed = discord.Embed(title=title, color=0x8080c0)
         embed.description = "準備してるから…少し待って…ね"
         msg = await channel.send(embed=embed)
@@ -226,7 +226,7 @@ class Recruit(commands.Cog):
             return
 
         dt = datetime.datetime.strptime(data['date'], '%Y/%m/%d')
-        title = f'{dt.month}/{dt.day} {st}時〜{et}時の自発消化募集だよ…'
+        title = f'{dt.month}/{dt.day} {st}時〜{et}時の募集だよ…'
         embed = discord.Embed(title=title, color=0x8080c0)
         embed.description = "準備してるから…少し待って…ね"
         await msg.edit(embed=embed)
