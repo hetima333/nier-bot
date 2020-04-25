@@ -61,7 +61,7 @@ class CocHelper(commands.Cog):
     @commands.command(aliases=["rc"])
     async def register_character(self, ctx, url: str):
         # NOTE: re使うほどじゃなさそうなので修正したほうがいいかも
-        url_reg = r"https:\/\/charasheet\.vampire-blood\.net\/[0-9a-zA-Z]*{1,}"
+        url_reg = r"https:\/\/charasheet\.vampire-blood\.net\/[0-9a-zA-Z]{1,}"
         result = re.match(url_reg, url)
         if result is None:
             await ctx.channel.send("URLが正しくないわ…\n正しいURLは `https://charasheet.vampire-blood.net/00000` のような形式よ")
