@@ -6,4 +6,5 @@ extentions = (
     'mention',
     'dice',
     'vocaloid_lyrics',
+    'coc_helper',
 )
