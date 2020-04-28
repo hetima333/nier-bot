@@ -148,7 +148,7 @@ class CocHelper(commands.Cog):
             result_text = "クリティカル"
         elif dice_result <= goal_num:
             result_text = "成功"
-        elif dice_result >= 95:
+        elif dice_result > 95:
             result_text = "ファンブル"
 
         # TODO: いい感じに取得する
