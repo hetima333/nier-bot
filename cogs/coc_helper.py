@@ -94,7 +94,6 @@ class CocHelper(commands.Cog):
     @classmethod
     def _load_character_from_json(cls, id: int):
         path = cls.CHARACTER_DIR / f"{id}.json"
-        print(path)
         with path.open() as f:
             data = json.load(f)
 
