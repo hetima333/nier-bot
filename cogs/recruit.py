@@ -108,7 +108,12 @@ class Recruit(commands.Cog):
             return
 
         # 特定のチャンネルのみ
-        if message.channel.id != 686701653369683994:
+        channel_id_list = [
+            686701653369683994,
+            685877606129860761,
+            703593278775230518
+        ]
+        if message.channel.id not in channel_id_list:
             return
 
         result = self.RECRUIT_REG.search(message.clean_content)
