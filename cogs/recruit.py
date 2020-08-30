@@ -107,13 +107,9 @@ class Recruit(commands.Cog):
         if message.author.bot:
             return
 
-        # 特定のチャンネルのみ
-        channel_id_list = [
-            686701653369683994,
-            685877606129860761,
-            703593278775230518
-        ]
-        if message.channel.id not in channel_id_list:
+        # 特定のカテゴリのみ
+        channel_category_id = 685877563620720665
+        if message.channel.category_id != channel_category_id:
             return
 
         result = self.RECRUIT_REG.search(message.clean_content)
