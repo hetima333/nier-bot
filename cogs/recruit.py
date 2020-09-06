@@ -369,7 +369,8 @@ class Recruit(commands.Cog):
 
         channel_id = recruit['channel_id']
         channel = await self.bot.fetch_channel(channel_id)
-        message = await channel.fetch_message(msg_id)
+        # message = await channel.fetch_message(msg_id)
+        # print(message.clean_content)
 
         # 最大人数はチャンネルメッセージから取得
         max_count = re.search(r'_(\d+)人', channel.name)
@@ -384,10 +385,12 @@ class Recruit(commands.Cog):
 
         if len(members) == max_count and old_count < len(members):
             # 揃った
-            send_message = f"<#{channel_id}> {message.clean_content} の {base_time}時〜{base_time + 1}時 の参加人数が揃った…よ"
+            send_message = f"<#{channel_id}> の {base_time}時〜{base_time + 1}時 の参加人数が揃った…よ"
+            # send_message = f"<#{channel_id}> {message.clean_content} の {base_time}時〜{base_time + 1}時 の参加人数が揃った…よ"
         elif old_count == max_count and len(members) < max_count:
             # 揃ってたけど、キャンセルがでた
-            send_message = f"<#{channel_id}> {message.clean_content} の {base_time}時〜{base_time + 1}時 にキャンセルが出た…よ"
+            send_message = f"<#{channel_id}> の {base_time}時〜{base_time + 1}時 にキャンセルが出た…よ"
+            # send_message = f"<#{channel_id}> {message.clean_content} の {base_time}時〜{base_time + 1}時 にキャンセルが出た…よ"
         else:
             return
 
