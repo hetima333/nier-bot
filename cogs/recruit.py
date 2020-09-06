@@ -144,7 +144,7 @@ class Recruit(commands.Cog):
         # TODO: メッセージ削除で募集の削除ができるように
         msg = await self.create_recruit(message.channel.id, date, start_time, end_time)
         await self.watch_all_recruits()
-        self.join_or_cancel_all_recruit(msg.id, message.author)
+        await self.join_or_cancel_all_recruit(msg.id, message.author)
 
     async def create_recruit(
             self, channel_id: int, date: str,
