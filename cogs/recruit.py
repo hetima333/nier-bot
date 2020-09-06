@@ -22,7 +22,8 @@ class Recruit(commands.Cog):
         with self.RECRUIT_FILE.open() as f:
             self.RECRUITS = json.loads(f.read())
 
-        self.RECRUIT_REG = re.compile(r"(?P<month>0?\d|1[0-2])/(?P<day>[0-2]?\d|3[01])\D*(?P<start>\d{1,2})時\D*(?P<end>\d{1,2})時")
+        self.RECRUIT_REG = re.compile(
+            r"(?P<month>0?\d|1[0-2])/(?P<day>[0-2]?\d|3[01])\D*(?P<start>\d{1,2})時\D*(?P<end>\d{1,2})時")
 
         # 定刻募集用ループ
         self.loop.start()
@@ -306,9 +307,9 @@ class Recruit(commands.Cog):
                     emoji_index = self.CONFIG['reactions'].index(emoji) - 1
                     recruit = self.RECRUITS[msg_id]
                     if emoji_index < 0:
-                        self.join_or_cancel_all_recruit(msg_id, member)
+                        await self.join_or_cancel_all_recruit(msg_id, member)
                     else:
-                        self.join_or_cancel_recruit(
+                        await self.join_or_cancel_recruit(
                             msg_id, emoji_index, member)
 
                     self.update_recruit()
@@ -328,7 +329,7 @@ class Recruit(commands.Cog):
             pass
         self.update_recruit()
 
-    def join_or_cancel_all_recruit(
+    async def join_or_cancel_all_recruit(
             self, msg_id, member: discord.Member) -> None:
         '''
         全ての募集に参加またはキャンセル
@@ -342,21 +343,59 @@ class Recruit(commands.Cog):
         if len(joined_list) > 0:
             # 全ての参加済みの募集から抜ける
             for index in joined_list:
-                self.join_or_cancel_recruit(msg_id, index, member)
+                await self.join_or_cancel_recruit(msg_id, index, member)
         else:
             for index in range(section_cnt):
-                self.join_or_cancel_recruit(msg_id, index, member)
+                await self.join_or_cancel_recruit(msg_id, index, member)
 
-    def join_or_cancel_recruit(
+    async def join_or_cancel_recruit(
             self, msg_id, index: int, member: discord.Member) -> None:
         '''募集に参加またはキャンセル'''
         section = self.RECRUITS[str(msg_id)]['sections'][index]
+        old_count = len(section['members'])
         # 参加の場合
         if member.id not in section['members']:
             section['members'].append(member.id)
         # キャンセルの場合
         else:
             section['members'].remove(member.id)
+
+        # 募集通知
+        await self.recruit_notification(msg_id, index, old_count)
+
+    async def recruit_notification(
+            self, msg_id, index: int, old_count: int) -> None:
+        recruit = self.RECRUITS[str(msg_id)]
+
+        channel_id = recruit['channel_id']
+        channel = await self.bot.fetch_channel(channel_id)
+        message = await channel.fetch_message(msg_id)
+
+        # 最大人数はチャンネルメッセージから取得
+        max_count = re.search(r'_(\d+)人', channel.name)
+        if max_count is None:
+            return
+        else:
+            max_count = int(max_count.group(1))
+
+        members = recruit['sections'][index]['members']
+        base_time = int(recruit['start_time']) + index
+        send_message = "送信用メッセージ"
+
+        if len(members) == max_count and old_count < len(members):
+            # 揃った
+            send_message = f"<#{channel_id}> {message.clean_content} の {base_time}時〜{base_time + 1}時 の参加人数が揃った…よ"
+        elif old_count == max_count and len(members) < max_count:
+            # 揃ってたけど、キャンセルがでた
+            send_message = f"<#{channel_id}> {message.clean_content} の {base_time}時〜{base_time + 1}時 にキャンセルが出た…よ"
+        else:
+            return
+
+        for member_id in members:
+            user = self.bot.get_user(member_id)
+
+            # dmで通知
+            await user.send(send_message)
 
     def is_rookie(self, member: discord.Member) -> bool:
         '''初心者かどうか判定する'''
