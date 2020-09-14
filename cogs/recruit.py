@@ -398,7 +398,10 @@ class Recruit(commands.Cog):
             user = self.bot.get_user(member_id)
 
             # dmで通知
-            await user.send(send_message)
+            try:
+                await user.send(send_message)
+            except discord.Forbidden:
+                continue
 
     def is_rookie(self, member: discord.Member) -> bool:
         '''初心者かどうか判定する'''
