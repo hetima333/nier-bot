@@ -22,7 +22,7 @@ class Nier(commands.Bot):
     # 起動時のイベント
     async def on_ready(self):
         print(f'Ready: {self.user} (ID: {self.user.id})')
-        activity = discord.Game('死ト愛ノ世界')
+        activity = discord.Game(f'({self.command_prefix}) 死ト愛ノ世界')
         await self.change_presence(activity=activity)
 
         # 拡張機能の読み込み
