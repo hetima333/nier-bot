@@ -107,5 +107,7 @@ venv.bak/
 data/json/config.json
 data/json/recruit.json
 
+data/img/superchat.png
+
 # テスト
 test/*

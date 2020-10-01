@@ -7,4 +7,5 @@ extentions = (
     'dice',
     'vocaloid_lyrics',
     'coc_helper',
+    'superchat',
 )
