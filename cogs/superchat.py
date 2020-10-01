@@ -7,7 +7,6 @@ import unicodedata
 import random
 import os
 import re
-from .utils.text_wrap import TextWrapper
 
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
@@ -57,11 +56,15 @@ class SuperChat(commands.Cog):
         text_color = colors['text_color']
 
         # MEMO: 1行40文字(小文字)
-        msg = re.sub(r"[\n|\r\n]", '=sc', msg)
-        w = TextWrapper(width=40)
-        msg = w.fill(msg)
-        msg = re.sub(r"=sc", "\n", msg)
-        lines = msg.count(os.linesep)
+        format_msg = ""
+        for v in msg.splitlines():
+            if len(v) > 20:
+                format_msg += '\n'.join([v[i: i+20]
+                                         for i in range(0, len(v), 20)])
+            else:
+                format_msg += v + '\n'
+
+        lines = format_msg.count(os.linesep)
         height = 150 + lines * 22
 
         im = Image.new("RGBA", (450, height), tuple(main_color))
@@ -69,17 +72,21 @@ class SuperChat(commands.Cog):
         draw.rectangle((0, 100, 450, height), fill=tuple(back_color))
 
         # 文字合成
-        font = ImageFont.truetype('data/font/migu-1m-bold.ttf', 20)
+        name_font = ImageFont.truetype('data/font/migu-1m-regular.ttf', 20)
+        text_font = ImageFont.truetype('data/font/migu-1m-bold.ttf', 20)
 
         # ユーザー名のみ少し薄い色
-        draw.multiline_text((110, 20), name, fill=tuple(name_color), font=font)
         draw.multiline_text(
-            (110, 50), f"¥ {money}", fill=tuple(text_color), font=font)
-        draw.multiline_text((25, 110), msg, fill=tuple(text_color), font=font)
+            (110, 20), name, fill=tuple(name_color), font=name_font)
+        draw.multiline_text(
+            (110, 50), f"¥ {'{:,}'.format(money)}", fill=tuple(text_color), font=text_font)
+        draw.multiline_text(
+            (25, 115), format_msg, fill=tuple(text_color), font=text_font)
 
         # 画像合成
         thum = thum.resize((60, 60))
-        im.paste(thum, (25, 20))
+        mask = Image.open('data/img/mask_circle.jpg').convert('L')
+        im.paste(thum, (25, 20), mask.resize((60, 60)))
 
         im.save('data/img/superchat.png')
 

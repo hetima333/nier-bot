@@ -19,14 +19,13 @@ class Update(commands.Cog):
         '''
 
         # 開発者以外は更新できないように
-        if ctx.author.id != int(os.environ['DEVELOPER_ID']):
-            await ctx.send('このコマンドは開発者専用よ')
+        if ctx.author.id != 273424184414175234:
             return
 
-        await ctx.send('更新を始めるわ！')
+        await ctx.send('更新を始める…よ')
         result = subprocess.run(['git', 'pull'])
         await self._reload_extentions(message)
-        await ctx.send(f'更新が終わったわ')
+        await ctx.send(f'更新が終わった…よ')
 
     @commands.command(aliases=['りろ', 'リロード'])
     async def reload(self, ctx, *, message: str = 'all'):
@@ -35,15 +34,12 @@ class Update(commands.Cog):
         '''
 
         # 開発者以外は更新できないように
-        if ctx.author.id != int(os.environ['DEVELOPER_ID']):
-            await ctx.send('このコマンドは開発者専用よ。あなたには扱えないわ')
+        if ctx.author.id != 273424184414175234:
             return
 
-        await self._disconnect_all_voiceclient()
-
-        await ctx.send('再読み込みを始めるわ！')
+        await ctx.send('再読み込みを始める…よ')
         await self._reload_extentions(message)
-        await ctx.send('再読み込みが終わったわ')
+        await ctx.send('再読み込みが終わった…よ')
 
     async def _reload_extentions(self, message: str):
         reload_list = None
@@ -64,14 +60,6 @@ class Update(commands.Cog):
                 print(f'reload {extention}')
             except Exception:
                 traceback.print_exc()
-
-    async def _disconnect_all_voiceclient(self):
-        # NOTE: かなり無理矢理退出させているので、要改善
-        print("全サーバーのVCから切断します")
-        async for guild in self.bot.fetch_guilds(limit=150):
-            member = await guild.fetch_member(self.bot.user.id)
-            if member is not None:
-                await member.move_to(None)
 
 
 def setup(bot):
