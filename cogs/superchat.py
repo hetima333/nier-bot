@@ -7,6 +7,7 @@ import unicodedata
 import random
 import os
 import re
+import emoji
 
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
@@ -59,16 +60,40 @@ class SuperChat(commands.Cog):
         name_color = colors['name_color']
         text_color = colors['text_color']
 
-        # MEMO: 1行40文字(小文字)
+        # MEMO: 1行38文字(小文字)
         format_msg = ""
-        for v in msg.splitlines():
-            if len(v) > 20:
-                format_msg += '\n'.join([v[i: i+20]
-                                         for i in range(0, len(v), 20)])
+        max_count = 36
+        str_count = 0
+
+        # スタンプを正規表現で見つけて配列に格納してメタ文字に置換する
+        stamp_re = re.compile(r"<:\w+:(\d+)>")
+        # MEMO: @@をダミー文字としているので、@@が含まれた文章が投稿されたらずれる
+        m, stamp_count = re.subn(stamp_re, '@@', msg)
+
+        # スタンプ合成
+        stamp_list = []
+        guild = ctx.guild
+        if guild is not None:
+            for s in re.findall(stamp_re, msg):
+                stamp = await guild.fetch_emoji(int(s))
+                stamp_list.append(stamp.url)
+
+        # 1行36文字に収める
+        for i, s in enumerate(m):
+            if unicodedata.east_asian_width(s) in 'FWA':
+                str_count += 2
             else:
-                format_msg += v + '\n'
-        # 改行を削除
-        format_msg = format_msg[:-1]
+                str_count += 1
+
+            format_msg += s
+
+            if s == '\n':
+                str_count = 0
+            if str_count > max_count:
+                format_msg += '\n'
+                str_count = 0
+
+        format_msg = re.sub('@\n@', '@@', format_msg)
 
         lines = format_msg.count(os.linesep)
         height = 150 + lines * 22
@@ -80,14 +105,43 @@ class SuperChat(commands.Cog):
         # 文字合成
         name_font = ImageFont.truetype('data/font/migu-1m-regular.ttf', 20)
         text_font = ImageFont.truetype('data/font/migu-1m-bold.ttf', 20)
+        emoji_font = ImageFont.truetype(
+            'data/font/TwitterColorEmoji-SVGinOT-OSX.ttf', 20)
 
         # ユーザー名のみ少し薄い色
         draw.multiline_text(
             (110, 20), name, fill=tuple(name_color), font=name_font)
         draw.multiline_text(
             (110, 50), f"¥ {'{:,}'.format(money)}", fill=tuple(text_color), font=text_font)
-        draw.multiline_text(
-            (25, 115), format_msg, fill=tuple(text_color), font=text_font)
+
+        offset = [0, 0]
+        prev_str = ''
+        for i, s in enumerate(format_msg):
+            if s in emoji.UNICODE_EMOJI:
+                draw.text((20 + offset[0], 115 + offset[1]),
+                          s, fill=tuple(text_color), font=emoji_font)
+                offset[0] += 20
+            elif unicodedata.east_asian_width(s) in 'FWA':
+                draw.text((20 + offset[0], 115 + offset[1]),
+                          s, fill=tuple(text_color), font=text_font)
+                offset[0] += 22
+            else:
+                draw.text((20 + offset[0], 115 + offset[1]),
+                          s, fill=tuple(text_color), font=text_font)
+                offset[0] += 11
+
+            if s == '@' and prev_str == '@':
+                pos = [20 + offset[0] - 22, 115 + offset[1]]
+                draw.rectangle((pos[0], pos[1], pos[0] + 50, pos[1] + 25), fill=tuple(back_color))
+                data = io.BytesIO(await stamp_list.pop(0).read())
+                stamp_img = Image.open(data).convert('RGBA')
+                stamp_img = stamp_img.resize((20, 20), Image.BICUBIC)
+                im.paste(stamp_img, (pos[0], pos[1]), stamp_img.split()[3])
+            prev_str = s
+
+            if s == '\n':
+                offset[0] = 0
+                offset[1] += 22
 
         # 画像合成
         thum = thum.resize((60, 60), Image.BICUBIC)
