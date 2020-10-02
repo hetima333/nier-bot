@@ -402,6 +402,8 @@ class Recruit(commands.Cog):
                 await user.send(send_message)
             except discord.Forbidden:
                 continue
+            except AttributeError:
+                continue
 
     def is_rookie(self, member: discord.Member) -> bool:
         '''初心者かどうか判定する'''
