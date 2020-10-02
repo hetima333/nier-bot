@@ -15,21 +15,25 @@ from PIL import Image, ImageDraw, ImageFont
 class SuperChat(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.color_file = Path("data/json/superchat_color.json")
+        self.color_file = Path("data/json/superchat_data.json")
 
     @commands.command()
     async def sc(self, ctx, message: str):
         user = ctx.message.author
         name = user.display_name
-        values = [200, 500, 1000, 2000, 5000, 10000]
-        money = random.choice(values)
-        # msg = message
         msg = ctx.message.clean_content[4:]
 
         await ctx.message.delete()
 
         with self.color_file.open() as f:
-            color_data = json.load(f)
+            d = json.load(f)
+            color_data = d["colors"]
+            values_data = d["values"]
+
+        # 金額のランダム生成
+        weights = [float(v) for v in values_data.keys()]
+        money = int(random.choice(random.choices(
+            list(values_data.values()), weights=weights)[0]))
 
         # 色分岐
         if money < 500:
