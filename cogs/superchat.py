@@ -90,9 +90,9 @@ class SuperChat(commands.Cog):
             (25, 115), format_msg, fill=tuple(text_color), font=text_font)
 
         # 画像合成
-        thum = thum.resize((60, 60))
+        thum = thum.resize((60, 60), Image.BICUBIC)
         mask = Image.open('data/img/mask_circle.jpg').convert('L')
-        im.paste(thum, (25, 20), mask.resize((60, 60)))
+        im.paste(thum, (25, 20), mask.resize((60, 60), Image.HAMMING))
 
         im.save('data/img/superchat.png')
 
