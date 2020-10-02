@@ -63,6 +63,8 @@ class SuperChat(commands.Cog):
                                          for i in range(0, len(v), 20)])
             else:
                 format_msg += v + '\n'
+        # 改行を削除
+        format_msg = format_msg[:-1]
 
         lines = format_msg.count(os.linesep)
         height = 150 + lines * 22
