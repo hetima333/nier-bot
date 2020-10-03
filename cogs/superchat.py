@@ -19,7 +19,6 @@ class SuperChat(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.color_file = Path("data/json/superchat_data.json")
-        # self.converter = EmojiConverter()
 
     @commands.command()
     async def sc(self, ctx, message: str):
@@ -52,10 +51,6 @@ class SuperChat(commands.Cog):
             colors = color_data.get("5000")
         else:
             colors = color_data.get("10000")
-
-        # ユーザーのサムネを取得してImageに変換
-        data = io.BytesIO(await user.avatar_url.read())
-        thum = Image.open(data).convert('RGBA')
 
         # 矩形を作成して表示
         main_color = colors['main_color']
@@ -124,12 +119,12 @@ class SuperChat(commands.Cog):
             # 絵文字の場合はbase64に変換して画像化、文字の代わりに埋め込み
             if s in emoji.UNICODE_EMOJI:
                 emoji_str = converter.to_base64_png(s)
-                imgdata = base64.b64decode(str(emoji_str))
-                emoji_img = Image.open(io.BytesIO(imgdata)).convert('RGBA')
+                emoji_img = Image.open(io.BytesIO(base64.b64decode(str(emoji_str)))).convert('RGBA')
                 emoji_img = emoji_img.resize((22, 22), Image.BICUBIC)
                 im.paste(
                     emoji_img, (20 + offset[0], 115 + offset[1]), emoji_img.split()[3])
                 offset[0] += text_width
+                del emoji_img
             elif unicodedata.east_asian_width(s) in 'FWA':
                 draw.text((20 + offset[0], 115 + offset[1]),
                           s, fill=tuple(text_color), font=text_font)
@@ -155,8 +150,13 @@ class SuperChat(commands.Cog):
                 offset[0] = 0
                 offset[1] += text_height
 
-        # 画像合成
+        del converter
+
+        # ユーザーのサムネを取得してImageに変換
+        data = io.BytesIO(await user.avatar_url.read())
+        thum = Image.open(data).convert('RGBA')
         thum = thum.resize((60, 60), Image.BICUBIC)
+        # 画像合成
         mask = Image.open('data/img/mask_circle.jpg').convert('L')
         im.paste(thum, (25, 20), mask.resize((60, 60), Image.HAMMING))
 
