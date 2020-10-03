@@ -110,8 +110,6 @@ class SuperChat(commands.Cog):
         # 文字合成
         name_font = ImageFont.truetype('data/font/migu-1m-regular.ttf', 20)
         text_font = ImageFont.truetype('data/font/migu-1m-bold.ttf', 20)
-        emoji_font = ImageFont.truetype(
-            'data/font/TwitterColorEmoji-SVGinOT-OSX.ttf', 20)
 
         # ユーザー名のみ少し薄い色
         draw.multiline_text(
