@@ -19,7 +19,7 @@ class SuperChat(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.color_file = Path("data/json/superchat_data.json")
-        self.converter = EmojiConverter()
+        # self.converter = EmojiConverter()
 
     @commands.command()
     async def sc(self, ctx, message: str):
@@ -119,10 +119,11 @@ class SuperChat(commands.Cog):
 
         offset = [0, 0]
         prev_str = ''
+        converter = EmojiConverter()
         for i, s in enumerate(format_msg):
             # 絵文字の場合はbase64に変換して画像化、文字の代わりに埋め込み
             if s in emoji.UNICODE_EMOJI:
-                emoji_str = self.converter.to_base64_png(s)
+                emoji_str = converter.to_base64_png(s)
                 imgdata = base64.b64decode(str(emoji_str))
                 emoji_img = Image.open(io.BytesIO(imgdata)).convert('RGBA')
                 emoji_img = emoji_img.resize((22, 22), Image.BICUBIC)
