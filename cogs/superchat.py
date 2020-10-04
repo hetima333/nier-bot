@@ -139,8 +139,6 @@ class SuperChat(commands.Cog):
         draw.multiline_text(
             (110, 50), f"¥ {'{:,}'.format(money)}", fill=tuple(text_color), font=text_font)
 
-        print('名前まで')
-
         draw.multiline_text(
             (20, 115), format_msg, fill=tuple(text_color), font=text_font
         )
