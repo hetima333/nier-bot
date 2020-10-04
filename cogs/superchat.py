@@ -12,7 +12,6 @@ import base64
 
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
-from .utils.emoji_converter import EmojiConverter
 
 
 class SuperChat(commands.Cog):
@@ -20,17 +19,30 @@ class SuperChat(commands.Cog):
         self.bot = bot
         self.color_file = Path("data/json/superchat_data.json")
 
-    @commands.command()
-    async def sc(self, ctx, message: str):
-        user = ctx.message.author
-        name = user.display_name
-        msg = ctx.message.clean_content[4:]
-
-        await ctx.message.delete()
-
+    def _get_money_colors(self, value: int) -> list:
         with self.color_file.open() as f:
             d = json.load(f)
             color_data = d["colors"]
+
+        # 色分岐
+        if value < 500:
+            colors = color_data.get("200")
+        elif value < 1000:
+            colors = color_data.get("500")
+        elif value < 2000:
+            colors = color_data.get("1000")
+        elif value < 5000:
+            colors = color_data.get("2000")
+        elif value < 10000:
+            colors = color_data.get("5000")
+        else:
+            colors = color_data.get("10000")
+
+        return colors
+
+    def _get_random_money(self) -> int:
+        with self.color_file.open() as f:
+            d = json.load(f)
             values_data = d["values"]
 
         # 金額のランダム生成
@@ -38,43 +50,17 @@ class SuperChat(commands.Cog):
         money = int(random.choice(random.choices(
             list(values_data.values()), weights=weights)[0]))
 
-        # 色分岐
-        if money < 500:
-            colors = color_data.get("200")
-        elif money < 1000:
-            colors = color_data.get("500")
-        elif money < 2000:
-            colors = color_data.get("1000")
-        elif money < 5000:
-            colors = color_data.get("2000")
-        elif money < 10000:
-            colors = color_data.get("5000")
-        else:
-            colors = color_data.get("10000")
+        return money
 
-        # 矩形を作成して表示
-        main_color = colors['main_color']
-        back_color = colors['back_color']
-        name_color = colors['name_color']
-        text_color = colors['text_color']
-
-        # MEMO: 1行38文字(小文字)
-        format_msg = ""
-        max_count = 36
-        str_count = 0
-
+    def _format_text(self, max_count: int, text: str):
         # スタンプを正規表現で見つけて配列に格納してメタ文字に置換する
         stamp_re = re.compile(r"<:\w+:(\d+)>")
         # MEMO: @@をダミー文字としているので、@@が含まれた文章が投稿されたらずれる
-        m, stamp_count = re.subn(stamp_re, '@@', msg)
+        m = re.sub(stamp_re, '@@', text)
 
-        # スタンプ合成
-        stamp_list = []
-        guild = ctx.guild
-        if guild is not None:
-            for s in re.findall(stamp_re, msg):
-                stamp = await guild.fetch_emoji(int(s))
-                stamp_list.append(stamp.url)
+        format_msg = ""
+        str_count = 0
+        emoji_list = []
 
         # 1行36文字に収める
         for i, s in enumerate(m):
@@ -83,7 +69,12 @@ class SuperChat(commands.Cog):
             else:
                 str_count += 1
 
-            format_msg += s
+            # 絵文字は&&に置き換える
+            if s in emoji.UNICODE_EMOJI:
+                emoji_list.append(s)
+                format_msg += '&&'
+            else:
+                format_msg += s
 
             if s == '\n':
                 str_count = 0
@@ -92,10 +83,44 @@ class SuperChat(commands.Cog):
                 str_count = 0
 
         format_msg = re.sub('@\n@', '@@', format_msg)
+        return format_msg, emoji_list
+
+    async def _get_custom_stamp_list(self, guild: discord.Guild, text: str) -> list:
+        # スタンプを正規表現で見つけて配列に格納してメタ文字に置換する
+        stamp_re = re.compile(r"<:\w+:(\d+)>")
+        # スタンプ合成
+        stamp_list = []
+        if guild is not None:
+            for s in re.findall(stamp_re, text):
+                stamp = await guild.fetch_emoji(int(s))
+                stamp_list.append(stamp.url)
+
+        return stamp_list
+
+    @commands.command()
+    async def sc(self, ctx):
+        user = ctx.message.author
+        msg = ctx.message.clean_content[4:]
+
+        await ctx.message.delete()
+
+        # 金額のランダム生成
+        money = self._get_random_money()
+        # 金額に対応した色
+        colors = self._get_money_colors(money)
+
+        # 矩形を作成して表示
+        main_color = colors['main_color']
+        back_color = colors['back_color']
+        name_color = colors['name_color']
+        text_color = colors['text_color']
+
+        format_msg, emoji_list = self._format_text(36, msg)
+        stamp_list = await self._get_custom_stamp_list(ctx.guild, msg)
 
         lines = format_msg.count(os.linesep)
         text_height = 22
-        text_width = 22
+        font_size = 20
         height = 150 + lines * text_height
 
         im = Image.new("RGBA", (450, height), tuple(main_color))
@@ -103,64 +128,72 @@ class SuperChat(commands.Cog):
         draw.rectangle((0, 100, 450, height), fill=tuple(back_color))
 
         # 文字合成
-        name_font = ImageFont.truetype('data/font/migu-1m-regular.ttf', 20)
-        text_font = ImageFont.truetype('data/font/migu-1m-bold.ttf', 20)
-
+        name_font = ImageFont.truetype(
+            'data/font/migu-1m-regular.ttf', font_size)
         # ユーザー名のみ少し薄い色
         draw.multiline_text(
-            (110, 20), name, fill=tuple(name_color), font=name_font)
+            (110, 20), user.display_name, fill=tuple(name_color), font=name_font)
+        del name_font
+
+        text_font = ImageFont.truetype('data/font/migu-1m-bold.ttf', font_size)
         draw.multiline_text(
             (110, 50), f"¥ {'{:,}'.format(money)}", fill=tuple(text_color), font=text_font)
 
+        print('名前まで')
+
+        draw.multiline_text(
+            (20, 115), format_msg, fill=tuple(text_color), font=text_font
+        )
+
         offset = [0, 0]
         prev_str = ''
-        converter = EmojiConverter()
         for i, s in enumerate(format_msg):
-            # 絵文字の場合はbase64に変換して画像化、文字の代わりに埋め込み
-            if s in emoji.UNICODE_EMOJI:
-                emoji_str = converter.to_base64_png(s)
-                emoji_img = Image.open(io.BytesIO(base64.b64decode(str(emoji_str)))).convert('RGBA')
-                emoji_img = emoji_img.resize((22, 22), Image.BICUBIC)
-                im.paste(
-                    emoji_img, (20 + offset[0], 115 + offset[1]), emoji_img.split()[3])
-                offset[0] += text_width
-                del emoji_img
-            elif unicodedata.east_asian_width(s) in 'FWA':
-                draw.text((20 + offset[0], 115 + offset[1]),
-                          s, fill=tuple(text_color), font=text_font)
-                offset[0] += text_width
+            if unicodedata.east_asian_width(s) in 'FWA':
+                offset[0] += font_size
             else:
-                draw.text((20 + offset[0], 115 + offset[1]),
-                          s, fill=tuple(text_color), font=text_font)
-                offset[0] += int(text_width / 2)
+                offset[0] += int(font_size / 2)
 
-            # カスタム絵文字を画像に置換
-            if s == '@' and prev_str == '@':
-                pos = [20 + offset[0] - 22, 115 + offset[1]]
-                draw.rectangle((pos[0], pos[1], pos[0] + 50,
-                                pos[1] + 25), fill=tuple(back_color))
-                data = io.BytesIO(await stamp_list.pop(0).read())
-                stamp_img = Image.open(data).convert('RGBA')
-                stamp_img = stamp_img.resize((22, 22), Image.BICUBIC)
-                im.paste(stamp_img, (pos[0] - 2,
-                                     pos[1] - 2), stamp_img.split()[3])
+            # カスタム絵文字と絵文字を画像に置換
+            if s in ['@', '&'] and s == prev_str:
+                pos = [
+                    20 + offset[0] - font_size,
+                    115 + offset[1]
+                ]
+                # ダミー文字を塗りつぶし
+                draw.rectangle((pos[0], pos[1], pos[0] + font_size,
+                                pos[1] + font_size), fill=tuple(back_color))
+                # カスタム絵文字の場合
+                if s == '@':
+                    data = io.BytesIO(await stamp_list.pop(0).read())
+                    stamp_img = Image.open(data).convert(
+                        'RGBA').resize((20, 20), Image.BICUBIC)
+                    im.paste(stamp_img, (pos[0], pos[1]), stamp_img.split()[3])
+                # 絵文字の場合
+                elif s == '&':
+                    emoji_str = emoji.demojize(emoji_list.pop(0))[1:-1]
+                    # 変換されない絵文字が存在するので念の為チェック（2020/10/4時点で⛩のみ）
+                    if emoji_str != '':
+                        emoji_img = Image.open(
+                            f'data/img/emoji/{emoji_str}.png').convert('RGBA')
+                        im.paste(emoji_img, (pos[0], pos[1]), emoji_img.split()[3])
+
             prev_str = s
 
             if s == '\n':
                 offset[0] = 0
                 offset[1] += text_height
 
-        del converter
-
         # ユーザーのサムネを取得してImageに変換
         data = io.BytesIO(await user.avatar_url.read())
         thum = Image.open(data).convert('RGBA')
+        del data
         thum = thum.resize((60, 60), Image.BICUBIC)
         # 画像合成
         mask = Image.open('data/img/mask_circle.jpg').convert('L')
         im.paste(thum, (25, 20), mask.resize((60, 60), Image.HAMMING))
 
         im.save('data/img/superchat.png')
+        del im
 
         await ctx.send(file=discord.File('data/img/superchat.png'))
 
