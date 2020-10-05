@@ -44,7 +44,6 @@ class Mention(commands.Cog):
             last_message_id = craft_channel.last_message_id
             if last_message_id is None:
                 return
-
             last_message = await craft_channel.fetch_message(last_message_id)
             if len(last_message.embeds) == 0:
                 return
@@ -52,20 +51,25 @@ class Mention(commands.Cog):
             if tweet_embed.image is None:
                 return
 
-            # 最新のメッセージが送信された月日
+            current_date = datetime.datetime.now()
             send_date = last_message.created_at
-            date_text = f"{send_date.month}/{send_date.day}"
-            # 該当する画像へのリンク
-            img_link = tweet_embed.image.url
 
-            embed = discord.Embed(color=config.DEFAULT_EMBED_COLOR)
-            embed.set_author(
-                name=f'{date_text}のクラフト内容',
-                icon_url=self.bot.user.avatar_url)
-            embed.set_image(url=img_link)
-            await message.channel.send(
-                f"{message.author.mention} {date_text}のクラフトだ…よ",
-                embed=embed)
+            # 3時より前なら1日前の送信まで有効
+            if current_date.day == send_date.day or (current_date.hour < 3 and current_date.day - 1 == send_date.day):
+                date_text = f"{send_date.month}/{send_date.day}"
+                # 該当する画像へのリンク
+                img_link = tweet_embed.image.url
+
+                embed = discord.Embed(color=config.DEFAULT_EMBED_COLOR)
+                embed.set_author(
+                    name=f'{date_text}のクラフト内容',
+                    icon_url=self.bot.user.avatar_url)
+                embed.set_image(url=img_link)
+                await message.channel.send(
+                    f"{message.author.mention} {date_text}のクラフトだ…よ",
+                    embed=embed)
+            else:
+                await message.channel.send('クラフト情報が更新されていないの…ごめんなさい…')
 
 
 def setup(bot):
