@@ -108,6 +108,9 @@ class Recruit(commands.Cog):
         if message.author.bot:
             return
 
+        if type(message.channel) == discord.DMChannel:
+            return
+
         # 特定のカテゴリのみ
         channel_category_id = 685877563620720665
         if message.channel.category_id != channel_category_id:
