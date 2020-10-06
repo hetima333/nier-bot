@@ -255,7 +255,7 @@ class Recruit(commands.Cog):
                 section = recruit['sections'][i]
                 count = len(section['members'])
                 for member_id in section['members']:
-                    user = self.bot.get_user(member_id)
+                    user = await self.bot.fetch_user(member_id)
                     if user is not None:
                         user_name = user.display_name
                     else:
@@ -395,7 +395,7 @@ class Recruit(commands.Cog):
             return
 
         for member_id in members:
-            user = self.bot.get_user(member_id)
+            user = await self.bot.fetch_user(member_id)
 
             # dmで通知
             try:
