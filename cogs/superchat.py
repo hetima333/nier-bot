@@ -52,8 +52,8 @@ class SuperChat(commands.Cog):
     def _format_text(self, max_count: int, text: str):
         # スタンプを正規表現で見つけて配列に格納してメタ文字に置換する
         stamp_re = re.compile(r"<:\w+:(\d+)>")
-        # MEMO: @@をダミー文字としているので、@@が含まれた文章が投稿されたらずれる
-        m = re.sub(stamp_re, '@@', text)
+        # MEMO: &@をダミー文字としているので、@@が含まれた文章が投稿されたらずれる
+        m = re.sub(stamp_re, '&@', text)
 
         format_msg = ""
         str_count = 0
@@ -66,10 +66,10 @@ class SuperChat(commands.Cog):
             else:
                 str_count += 1
 
-            # 絵文字は&&に置き換える
+            # 絵文字は&%に置き換える
             if s in emoji.UNICODE_EMOJI:
                 emoji_list.append(s)
-                format_msg += '&&'
+                format_msg += '&%'
             else:
                 format_msg += s
 
@@ -79,8 +79,8 @@ class SuperChat(commands.Cog):
                 format_msg += '\n'
                 str_count = 0
 
-        format_msg = re.sub('@\n@', '@@', format_msg)
-        print(format_msg)
+        format_msg = re.sub('&\n@', '&@', format_msg)
+        print(f"format : {format_msg}")
         print(emoji_list)
         return format_msg, emoji_list
 
@@ -145,12 +145,14 @@ class SuperChat(commands.Cog):
         prev_str = ''
         for i, s in enumerate(format_msg):
             if unicodedata.east_asian_width(s) in 'FWA':
+                print(f"{s} : 22")
                 offset[0] += font_size
             else:
+                print(f"{s} : 11")
                 offset[0] += int(font_size / 2)
 
             # カスタム絵文字と絵文字を画像に置換
-            if s in ['@', '&'] and s == prev_str:
+            if s in ['@', '%'] and prev_str == '&':
                 pos = [
                     20 + offset[0] - font_size,
                     115 + offset[1]
@@ -165,7 +167,7 @@ class SuperChat(commands.Cog):
                         'RGBA').resize((20, 20), Image.BICUBIC)
                     im.paste(stamp_img, (pos[0], pos[1]), stamp_img.split()[3])
                 # 絵文字の場合
-                elif s == '&':
+                elif s == '%':
                     if len(emoji_list) > 0:
                         emoji_str = emoji.demojize(emoji_list.pop(0))[1:-1]
                         # 変換されない絵文字が存在するので念の為チェック（2020/10/4時点で⛩のみ）
