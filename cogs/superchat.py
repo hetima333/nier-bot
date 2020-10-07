@@ -80,8 +80,8 @@ class SuperChat(commands.Cog):
                 str_count = 0
 
         format_msg = re.sub('&\n@', '&@', format_msg)
-        print(f"format : {format_msg}")
-        print(emoji_list)
+        if format_msg[-1] == "\n":
+            format_msg = format_msg[:-1]
         return format_msg, emoji_list
 
     async def _get_custom_stamp_list(self, guild: discord.Guild, text: str) -> list:
@@ -133,7 +133,7 @@ class SuperChat(commands.Cog):
             (110, 20), user.display_name, fill=tuple(name_color), font=name_font)
         del name_font
 
-        text_font = ImageFont.truetype(str(self.path / "font/migu-1m-regular.ttf"), font_size)
+        text_font = ImageFont.truetype(str(self.path / "font/migu-1m-bold.ttf"), font_size)
         draw.multiline_text(
             (110, 50), f"¥ {'{:,}'.format(money)}", fill=tuple(text_color), font=text_font)
 
@@ -145,10 +145,8 @@ class SuperChat(commands.Cog):
         prev_str = ''
         for i, s in enumerate(format_msg):
             if unicodedata.east_asian_width(s) in 'FWA':
-                print(f"{s} : 22")
                 offset[0] += font_size
             else:
-                print(f"{s} : 11")
                 offset[0] += int(font_size / 2)
 
             # カスタム絵文字と絵文字を画像に置換
