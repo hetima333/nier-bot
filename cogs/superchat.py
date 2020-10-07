@@ -8,7 +8,6 @@ import random
 import os
 import re
 import emoji
-import base64
 
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
@@ -17,12 +16,11 @@ from PIL import Image, ImageDraw, ImageFont
 class SuperChat(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.color_file = Path("data/json/superchat_data.json")
+        self.path = Path("../lunalu-bot/data")
 
     def _get_money_colors(self, value: int) -> list:
-        with self.color_file.open() as f:
-            d = json.load(f)
-            color_data = d["colors"]
+        with (self.path / "json/superchat/colors.json").open() as f:
+            color_data = json.load(f)
 
         # 色分岐
         if value < 500:
@@ -41,9 +39,8 @@ class SuperChat(commands.Cog):
         return colors
 
     def _get_random_money(self) -> int:
-        with self.color_file.open() as f:
-            d = json.load(f)
-            values_data = d["values"]
+        with (self.path / "json/superchat/values.json").open() as f:
+            values_data = json.load(f)
 
         # 金額のランダム生成
         weights = [float(v) for v in values_data.keys()]
@@ -83,6 +80,8 @@ class SuperChat(commands.Cog):
                 str_count = 0
 
         format_msg = re.sub('@\n@', '@@', format_msg)
+        print(format_msg)
+        print(emoji_list)
         return format_msg, emoji_list
 
     async def _get_custom_stamp_list(self, guild: discord.Guild, text: str) -> list:
@@ -128,14 +127,13 @@ class SuperChat(commands.Cog):
         draw.rectangle((0, 100, 450, height), fill=tuple(back_color))
 
         # 文字合成
-        name_font = ImageFont.truetype(
-            'data/font/migu-1m-regular.ttf', font_size)
+        name_font = ImageFont.truetype(str(self.path / "font/migu-1m-regular.ttf"), font_size)
         # ユーザー名のみ少し薄い色
         draw.multiline_text(
             (110, 20), user.display_name, fill=tuple(name_color), font=name_font)
         del name_font
 
-        text_font = ImageFont.truetype('data/font/migu-1m-bold.ttf', font_size)
+        text_font = ImageFont.truetype(str(self.path / "font/migu-1m-regular.ttf"), font_size)
         draw.multiline_text(
             (110, 50), f"¥ {'{:,}'.format(money)}", fill=tuple(text_color), font=text_font)
 
@@ -168,12 +166,13 @@ class SuperChat(commands.Cog):
                     im.paste(stamp_img, (pos[0], pos[1]), stamp_img.split()[3])
                 # 絵文字の場合
                 elif s == '&':
-                    emoji_str = emoji.demojize(emoji_list.pop(0))[1:-1]
-                    # 変換されない絵文字が存在するので念の為チェック（2020/10/4時点で⛩のみ）
-                    if emoji_str != '':
-                        emoji_img = Image.open(
-                            f'data/img/emoji/{emoji_str}.png').convert('RGBA')
-                        im.paste(emoji_img, (pos[0], pos[1]), emoji_img.split()[3])
+                    if len(emoji_list) > 0:
+                        emoji_str = emoji.demojize(emoji_list.pop(0))[1:-1]
+                        # 変換されない絵文字が存在するので念の為チェック（2020/10/4時点で⛩のみ）
+                        emoji_img_path = self.path / f'img/emoji/{emoji_str}.png'
+                        if os.path.isfile(emoji_img_path):
+                            emoji_img = Image.open(emoji_img_path).convert('RGBA')
+                            im.paste(emoji_img, (pos[0], pos[1]), emoji_img.split()[3])
 
             prev_str = s
 
@@ -187,13 +186,13 @@ class SuperChat(commands.Cog):
         del data
         thum = thum.resize((60, 60), Image.BICUBIC)
         # 画像合成
-        mask = Image.open('data/img/mask_circle.jpg').convert('L')
+        mask = Image.open(self.path / "img/superchat/mask_circle.jpg").convert('L')
         im.paste(thum, (25, 20), mask.resize((60, 60), Image.HAMMING))
 
-        im.save('data/img/superchat.png')
+        im.save(self.path / "img/superchat/superchat.png")
         del im
 
-        await ctx.send(file=discord.File('data/img/superchat.png'))
+        await ctx.send(file=discord.File(self.path / "img/superchat/superchat.png"))
 
 
 def setup(bot):
