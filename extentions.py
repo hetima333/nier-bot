@@ -8,4 +8,5 @@ extentions = (
     'vocaloid_lyrics',
     'coc_helper',
     'superchat',
+    'calculator',
 )
