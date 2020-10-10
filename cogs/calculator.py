@@ -19,7 +19,8 @@ class Calculator(commands.Cog):
             anser = None
 
         if anser is not None:
-            result = f"計算の結果だ…よ\n```{formula} = {anser}```"
+            result = f"{ctx.author.mention} 計算の結果だ…よ\n"
+            result += f"```{formula} = {anser}```"
         else:
             result = "式が正しくないよ…もう一度確認してみて…"
 
