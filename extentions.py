@@ -9,4 +9,5 @@ extentions = (
     'coc_helper',
     'superchat',
     'calculator',
+    'thread',
 )
