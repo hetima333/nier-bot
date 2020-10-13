@@ -51,8 +51,8 @@ class Thread(commands.Cog):
         embed.description = f"[スレッド元]({message.jump_url})"
 
         await channel.send(f"スレッドを開始した…よ <#{thread_channel.id}>")
-        await thread_channel.send(f"{user.mention} がスレッドを開始した…よ", embed=embed)
-        await thread_channel.send(f"```{message.content}```")
+        await thread_channel.send(f"{message.author.mention} スレッドが開始された…よ", embed=embed)
+        await thread_channel.send(f"```{message.clean_content}```")
         await notify_channel.send(f"新しいスレッドが開始された…よ <#{thread_channel.id}>")
 
 
