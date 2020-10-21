@@ -10,4 +10,5 @@ extentions = (
     'superchat',
     'calculator',
     'thread',
+    'pokedex',
 )
