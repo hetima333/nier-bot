@@ -26,6 +26,35 @@ class Mention(commands.Cog):
             await message.channel.send(
                 f"{message.author.mention} {random.choice(serifs)}")
 
+        # 「滅びろ祇園の風」に反応して画像を送信する
+        if "滅びろ祇園の風" == message.content:
+            embed = discord.Embed(color=config.DEFAULT_EMBED_COLOR)
+            embed.set_image(
+                url='https://cdn.discordapp.com/attachments/467646451170803733/647092862361796616/EG2DHAxUEAETGDe.png')
+            embed.set_footer(text=message.author.display_name,
+                             icon_url=message.author.avatar_url)
+            await message.channel.send(embed=embed)
+
+        # 「行け」に反応して画像を送信する
+        if "おい" == message.content:
+            embed = discord.Embed(color=config.DEFAULT_EMBED_COLOR)
+            urls = [
+                'https://cdn.discordapp.com/attachments/500215831784062977/682619031647289428/2020-01-31_23.png',
+                'https://cdn.discordapp.com/attachments/500215831784062977/682889819361378305/39909d9e9d631ee2c980c56577d20e3e-png.png',
+                'https://cdn.discordapp.com/attachments/683536765977624590/734054219178311740/333fc592439f2795bee1906e3d1b90e9.png'
+            ]
+            embed.set_image(url=random.choice(urls))
+            await message.channel.send(embed=embed)
+
+        if "はよいけ" == message.content:
+            embed = discord.Embed(color=config.DEFAULT_EMBED_COLOR)
+            urls = [
+                'https://cdn.discordapp.com/attachments/500215831784062977/685147145560391775/unknown.png',
+                'https://cdn.discordapp.com/attachments/500215831784062977/686769829029347356/unknown.png'
+            ]
+            embed.set_image(url=random.choice(urls))
+            await message.channel.send(embed=embed)
+
         if message.content == 'シート':
             embed = discord.Embed(color=config.DEFAULT_EMBED_COLOR)
             embed.set_author(
