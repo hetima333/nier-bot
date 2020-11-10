@@ -12,8 +12,6 @@ class Mention(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        print(type(self.bot))
-        print(self.bot.foo)
         if message.author.bot:
             return
 
