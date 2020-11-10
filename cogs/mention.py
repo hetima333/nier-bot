@@ -12,6 +12,8 @@ class Mention(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        print(type(self.bot))
+        print(self.bot.foo)
         if message.author.bot:
             return
 
@@ -61,6 +63,16 @@ class Mention(commands.Cog):
                 name='シート',
                 icon_url=self.bot.user.avatar_url)
             embed.description = f"[放置狩りシート](https://docs.google.com/spreadsheets/d/1Zt-3rUv3m8fOJJyQAKpyC9qiFopBMXeQGSRYiLvFWjM/edit#gid=0)"
+            await message.channel.send(
+                f"{message.author.mention} シートのリンクだ…よ",
+                embed=embed)
+
+        if message.content in ['はらかみ', 'げんしん', '原神']:
+            embed = discord.Embed(color=config.DEFAULT_EMBED_COLOR)
+            embed.set_author(
+                name='シート',
+                icon_url=self.bot.user.avatar_url)
+            embed.description = f"[難民キャンプはらかみ部シート](https://docs.google.com/spreadsheets/d/12ynFBXEb4yTGWI-jI8V097OowdV_cmDQJFh7U-_7gK0/edit?usp=sharing)"
             await message.channel.send(
                 f"{message.author.mention} シートのリンクだ…よ",
                 embed=embed)
