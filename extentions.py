@@ -11,4 +11,5 @@ extentions = (
     'calculator',
     'thread',
     'pokedex',
+    'inline',
 )
