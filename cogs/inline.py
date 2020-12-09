@@ -15,6 +15,10 @@ class Inline(commands.Cog):
         if message.author.bot:
             return
 
+        # DMは無視
+        if message.guild is None:
+            return
+
         result = self.URL_REG.search(message.clean_content)
         if result is None:
             return
