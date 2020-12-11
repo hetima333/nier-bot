@@ -112,7 +112,7 @@ class Recruit(commands.Cog):
             return
 
         # 特定のカテゴリのみ
-        channel_category_id = 685877563620720665
+        channel_category_id = 786962168418926652
         if message.channel.category_id != channel_category_id:
             return
 
