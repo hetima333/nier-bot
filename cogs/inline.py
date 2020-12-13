@@ -33,15 +33,21 @@ class Inline(commands.Cog):
             channel_id = int(result.group("channel_id"))
             link_channel = await self.bot.fetch_channel(channel_id)
             msg_id = int(result.group("msg_id"))
-            link_msg = await link_channel.fetch_message(msg_id)
+            link_msg: discord.Message = await link_channel.fetch_message(msg_id)
             member = await message.guild.fetch_member(link_msg.author.id)
+            files = None
+            if len(link_msg.attachments) > 0:
+                files = [await v.to_file(spoiler=v.is_spoiler()) for v in link_msg.attachments]
         except Exception as e:
             print(e)
         else:
             # 引用をつけて投稿
             send_msg = "> " + member.display_name + " さんの投稿\n"
             send_msg += link_msg.clean_content
-            await message.channel.send(send_msg)
+            if files is None:
+                await message.channel.send(send_msg)
+            else:
+                await message.channel.send(send_msg, files=files)
 
 
 def setup(bot):
