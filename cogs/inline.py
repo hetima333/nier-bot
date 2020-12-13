@@ -8,7 +8,7 @@ class Inline(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.URL_REG = re.compile(
-            r"https://discord.com/channels/(?P<guild_id>\d+)/(?P<channel_id>\d+)/(?P<message_id>\d+)")
+            r"https://discord.com/channels/(?P<guild_id>\d+)/(?P<channel_id>\d+)/(?P<msg_id>\d+)")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -32,13 +32,16 @@ class Inline(commands.Cog):
         try:
             channel_id = int(result.group("channel_id"))
             link_channel = await self.bot.fetch_channel(channel_id)
-            message_id = int(result.group("message_id"))
-            link_message = await link_channel.fetch_message(message_id)
+            msg_id = int(result.group("msg_id"))
+            link_msg = await link_channel.fetch_message(msg_id)
+            member = await message.guild.fetch_member(link_msg.author.id)
         except Exception as e:
             print(e)
         else:
             # 引用をつけて投稿
-            await message.channel.send("> " + link_message.clean_content)
+            send_msg = "> " + member.display_name + " さんの投稿\n"
+            send_msg += link_msg.clean_content
+            await message.channel.send(send_msg)
 
 
 def setup(bot):
