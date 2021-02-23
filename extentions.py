@@ -12,4 +12,5 @@ extentions = (
     'thread',
     'pokedex',
     'inline',
+    'amongus',
 )
