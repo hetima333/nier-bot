@@ -20,6 +20,7 @@ class QuizStatus(Enum):
     Downloading = 1
     Converting = 2
     Playing = 3
+    End = 4
 
 
 class IntroQuiz(commands.Cog):
@@ -31,14 +32,13 @@ class IntroQuiz(commands.Cog):
         self.reply_message = None
         self.embed_message = None
         self.voice_client = None
-
-        self.intro_list = list()
+        self.intro_list = None
         self.pos = 0
         self.operation_embed = discord.Embed(
             color=config.DEFAULT_EMBED_COLOR)
         self.operation_embed.add_field(
             name="操作方法",
-            value="このメッセージにスタンプを押すことで操作できるよ…\n🔁でもう一度再生、➡で次の問題へ")
+            value="このメッセージにスタンプを押すことで操作できるよ…\n🔁でもう一度再生、➡で次の問題へ、⏹で終了")
 
         self.current_status = QuizStatus.Idle
 
@@ -110,20 +110,23 @@ class IntroQuiz(commands.Cog):
         if payload.message_id != self.embed_message.id:
             return
 
+        member = self.reply_message.guild.get_member(payload.user_id)
+        if member is not None:
+            await self.reply_message.remove_reaction(emoji, member)
+
         if emoji == "🔁":
             await self.__play_intro(self.reply_message)
-
-        if emoji == "➡":
+        elif emoji == "➡":
             # ステータスをダウンロード中にする
             self.current_status = QuizStatus.Downloading
             await self.__update_embed_with_status(self.current_status)
 
             if self.pos + 1 >= len(self.intro_list):
                 await self.reply_message.edit(
-                    content=f'問題は全て終了したわ。お疲れ様。\n{self.intro_list[self.pos]["url"]}')
+                    content=f'問題は全て終了した…よ…お疲れ様…\n{self.intro_list[self.pos]["url"]}')
             else:
                 await self.reply_message.edit(
-                    content=f'正解はこれよ。（{self.pos+1}/{len(self.intro_list)}問）\n{self.intro_list[self.pos]["url"]}')
+                    content=f'正解はこれだ…よ（{self.pos+1}/{len(self.intro_list)}問）\n{self.intro_list[self.pos]["url"]}')
                 self.pos += 1
                 await self.__download_music(self.intro_list[self.pos]["url"])
                 await self.__convert_mp3()
@@ -131,14 +134,22 @@ class IntroQuiz(commands.Cog):
 
         if emoji == "⏹":
             await self.__bye()
+            await self.reply_message.edit(
+                content=f'イントロクイズは終了した…よ…\n{self.intro_list[self.pos]["url"]}')
+            self.current_status = QuizStatus.End
+            await self.__update_embed_with_status(self.current_status)
+            self.__init_value()
+        else:
+            # ステータスをアイドルにする
+            self.current_status = QuizStatus.Idle
+            await self.__update_embed_with_status(self.current_status)
 
-        # ステータスをアイドルにする
-        self.current_status = QuizStatus.Idle
-        await self.__update_embed_with_status(self.current_status)
-
-        member = self.reply_message.guild.get_member(payload.user_id)
-        if member is not None:
-            await self.reply_message.remove_reaction(emoji, member)
+    def __init_value(self):
+        self.reply_message = None
+        self.embed_message = None
+        self.voice_client = None
+        self.intro_list = None
+        self.pos = 0
 
     async def __join(self, channel: discord.VoiceChannel):
         if channel is None:
@@ -158,6 +169,8 @@ class IntroQuiz(commands.Cog):
             embed.set_footer(text="ステータス：再生中")
         if status == QuizStatus.Converting:
             embed.set_footer(text="ステータス：音声ファイルの変換中")
+        if status == QuizStatus.End:
+            embed.set_footer(text="ステータス：終了")
 
         await self.embed_message.edit(embed=embed)
 
