@@ -109,5 +109,9 @@ data/json/recruit.json
 
 data/img/superchat.png
 
+# イントロクイズ
+data/output.mp3
+data/input.mp3
+
 # テスト
 test/*

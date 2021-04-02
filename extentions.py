@@ -13,4 +13,5 @@ extentions = (
     'pokedex',
     'inline',
     'amongus',
+    'intro_quiz'
 )
