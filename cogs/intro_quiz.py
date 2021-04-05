@@ -209,7 +209,8 @@ class IntroQuiz(commands.Cog):
         # 無音部分終わりから5秒間を抽出
         sound = sound[start_trim:start_trim+5000]
         # 音量調整
-        sound = sound + ratio_to_db(2100 / sound.rms)
+        # sound = sound + ratio_to_db(2100 / sound.rms)
+        sound = sound + ratio_to_db(1050 / sound.rms)
         # フェードイン（0.5秒）、フェードアウト（0.5秒）
         sound = sound.fade_in(500).fade_out(500)
         # 保存
