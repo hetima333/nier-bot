@@ -64,7 +64,8 @@ class IntroQuiz(commands.Cog):
 
         # 必要なデータだけを抽出する
         if _arg != "all":
-            self.intro_list = [s for s in intro_data if _arg in s['tags']]
+            self.intro_list = [s for s in intro_data if len(
+                set(_arg) & set(s['tags'])) > 0]
         else:
             self.intro_list = intro_data
         random.shuffle(self.intro_list)
