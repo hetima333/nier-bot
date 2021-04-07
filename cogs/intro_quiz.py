@@ -28,7 +28,7 @@ class IntroQuiz(commands.Cog):
         self.bot = bot
         self.INTRO_DATA_FILE = Path('../lunalu-bot/data/json/intro_data.json')
 
-        self.trigger_emojis = ["🔁", "➡"]
+        self.trigger_emojis = ["🔁", "➡", "⏹️"]
         self.reply_message = None
         self.embed_message = None
         self.voice_client = None
@@ -38,7 +38,7 @@ class IntroQuiz(commands.Cog):
             color=config.DEFAULT_EMBED_COLOR)
         self.operation_embed.add_field(
             name="操作方法",
-            value="このメッセージにスタンプを押すことで操作できるよ…\n🔁でもう一度再生、➡で次の問題へ、⏹で終了")
+            value="このメッセージにスタンプを押すことで操作できるよ…\n🔁でもう一度再生、➡で次の問題へ、⏹で終了\nステータス：待機中以外の時はスタンプを押しても反応しないよ")
 
         self.current_status = QuizStatus.Idle
 
@@ -48,9 +48,38 @@ class IntroQuiz(commands.Cog):
             return
 
     @intro.command()
-    async def start(self, ctx, *, arg: str = "all"):
-        _arg = arg.replace(' ', '')
+    async def foo(self, ctx, *, arg: str = "all"):
+        _arg = arg.split('-')
+        tags = _arg[0].split(' ')
 
+        popularity = 5
+
+        # -pなど判定
+        for item in _arg:
+            x = item.split(' ')
+            if len(x) <= 1:
+                continue
+
+            if x[0] == 'p':
+                popularity = int(x[1])
+
+        # jsonからデータを読み込む
+        with self.INTRO_DATA_FILE.open() as f:
+            intro_data = json.loads(f.read())
+
+        # 必要なデータだけを抽出する
+        if tags[0] != "all":
+            self.intro_list = [s for s in intro_data if len(
+                set(tags) & set(s['tags'])) > 0 and s['popularity'] <= popularity]
+        else:
+            self.intro_list = intro_data
+
+        for item in self.intro_list:
+            print(
+                f"{item['popularity']} : {item['title']} : {item['tags']} : {item['artist']}")
+
+    @intro.command()
+    async def start(self, ctx, *, arg: str = "all"):
         # コマンドを入力したユーザーがVCに参加していない場合はエラー
         if ctx.author.voice is None:
             await ctx.channel.send('VCに入った状態でもう一度コマンドを入力してみて…')
@@ -58,14 +87,28 @@ class IntroQuiz(commands.Cog):
         else:
             await self.__join(ctx.author.voice.channel)
 
+        _arg = arg.split('-')
+        tags = _arg[0].split(' ')
+
+        popularity = 5
+
+        # -pなど判定
+        for item in _arg:
+            x = item.split(' ')
+            if len(x) <= 1:
+                continue
+
+            if x[0] == 'p':
+                popularity = int(x[1])
+
         # jsonからデータを読み込む
         with self.INTRO_DATA_FILE.open() as f:
             intro_data = json.loads(f.read())
 
         # 必要なデータだけを抽出する
-        if _arg != "all":
+        if tags[0] != "all":
             self.intro_list = [s for s in intro_data if len(
-                set(_arg) & set(s['tags'])) > 0]
+                set(tags) & set(s['tags'])) > 0 and s['popularity'] <= popularity]
         else:
             self.intro_list = intro_data
         random.shuffle(self.intro_list)
@@ -78,7 +121,8 @@ class IntroQuiz(commands.Cog):
             embed=self.operation_embed)
 
         for item in self.trigger_emojis:
-            await self.embed_message.add_reaction(item)
+            if item != "⏹️":
+                await self.embed_message.add_reaction(item)
 
         await self.__download_music(self.intro_list[self.pos]["url"])
         await self.__convert_mp3()
@@ -127,13 +171,13 @@ class IntroQuiz(commands.Cog):
                     content=f'問題は全て終了した…よ…お疲れ様…\n{self.intro_list[self.pos]["url"]}')
             else:
                 await self.reply_message.edit(
-                    content=f'正解はこれだ…よ（{self.pos+1}/{len(self.intro_list)}問）\n{self.intro_list[self.pos]["url"]}')
+                    content=f'正解は `{self.intro_list[self.pos]["title"]}` だ…よ（{self.pos+1}/{len(self.intro_list)}問）\n{self.intro_list[self.pos]["url"]}')
                 self.pos += 1
                 await self.__download_music(self.intro_list[self.pos]["url"])
                 await self.__convert_mp3()
                 await self.__play_intro(self.reply_message.guild.id)
 
-        if emoji == "⏹":
+        if emoji == "⏹️":
             await self.__bye()
             await self.reply_message.edit(
                 content=f'イントロクイズは終了した…よ…\n{self.intro_list[self.pos]["url"]}')
