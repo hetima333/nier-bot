@@ -28,7 +28,7 @@ class IntroQuiz(commands.Cog):
         self.bot = bot
         self.INTRO_DATA_FILE = Path('../lunalu-bot/data/json/intro_data.json')
 
-        self.trigger_emojis = ["🔁", "➡", "⏹"]
+        self.trigger_emojis = ["🔁", "➡"]
         self.reply_message = None
         self.embed_message = None
         self.voice_client = None
