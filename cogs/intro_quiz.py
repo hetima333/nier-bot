@@ -56,7 +56,7 @@ class IntroQuiz(commands.Cog):
         else:
             await self.__join(ctx.author.voice.channel)
 
-        _arg = arg.split('--')
+        _arg = arg.split(' -')
         tags = ['all']
         popularity = 1
 
