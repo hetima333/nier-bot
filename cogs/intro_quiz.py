@@ -56,10 +56,9 @@ class IntroQuiz(commands.Cog):
         else:
             await self.__join(ctx.author.voice.channel)
 
-        _arg = arg.split('-')
-        tags = _arg[0].split(' ')
-
-        popularity = 5
+        _arg = arg.split('--')
+        tags = ['all']
+        popularity = 1
 
         # -pなど判定
         for item in _arg:
@@ -70,6 +69,9 @@ class IntroQuiz(commands.Cog):
             if x[0] == 'p':
                 popularity = int(x[1])
 
+            if x[0] == 't':
+                tags = x[1:]
+
         # jsonからデータを読み込む
         with self.INTRO_DATA_FILE.open() as f:
             intro_data = json.loads(f.read())
@@ -77,14 +79,21 @@ class IntroQuiz(commands.Cog):
         # 必要なデータだけを抽出する
         if tags[0] != "all":
             self.intro_list = [s for s in intro_data if len(
-                set(tags) & set(s['tags'])) > 0 and s['popularity'] <= popularity]
+                set(tags) & set(s['tags'])) > 0 and s['popularity'] >= popularity]
         else:
             self.intro_list = intro_data
+
+        # 問題数が0問の場合
+        if len(self.intro_list) < 1:
+            await ctx.message.reply("該当する問題が1問もない…よ\n他のオプションを試して欲しいな…")
+            self.intro_list = None
+            return
+
         random.shuffle(self.intro_list)
         self.pos = 0
 
         self.reply_message = await ctx.message.reply(
-            f"イントロクイズを開始する…よ（全{len(self.intro_list)}問）")
+            f"イントロクイズを開始する…よ（全{len(self.intro_list)}問）\n出題範囲は以下のとおり…だよ\nタグ：{','.join(tags)}\n知名度：{popularity}以上")
         # 操作バネルEmbedを送信する
         self.embed_message = await ctx.message.channel.send(
             embed=self.operation_embed)
