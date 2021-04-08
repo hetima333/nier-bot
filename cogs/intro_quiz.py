@@ -32,7 +32,7 @@ class IntroQuiz(commands.Cog):
         self.reply_message = None
         self.embed_message = None
         self.voice_client = None
-        self.intro_list = None
+        self.intro_list = list()
         self.pos = 0
         self.operation_embed = discord.Embed(
             color=config.DEFAULT_EMBED_COLOR)
@@ -56,37 +56,53 @@ class IntroQuiz(commands.Cog):
         else:
             await self.__join(ctx.author.voice.channel)
 
-        _arg = arg.split(' -')
-        tags = ['all']
-        popularity = 1
-
-        # -pなど判定
-        for item in _arg:
-            x = item.split(' ')
-            if len(x) <= 1:
-                continue
-
-            if x[0] == 'p':
-                popularity = int(x[1])
-
-            if x[0] == 't':
-                tags = x[1:]
+        if arg.startswith("-"):
+            _arg = "all " + arg
+            _arg = _arg.split(' -')
+        else:
+            _arg = arg.split(' -')
 
         # jsonからデータを読み込む
         with self.INTRO_DATA_FILE.open() as f:
             intro_data = json.loads(f.read())
 
-        # 必要なデータだけを抽出する
-        if tags[0] != "all":
-            self.intro_list = [s for s in intro_data if len(
-                set(tags) & set(s['tags'])) > 0 and s['popularity'] >= popularity]
-        else:
+        # オプション指定なしなら全曲を対象とする
+        if _arg[0] == "all" and len(_arg) == 1:
             self.intro_list = intro_data
+        else:
+            tags = _arg[0].split(' ')
+            artists = []
+            popularity = 1
+
+            # -pなど判定
+            for item in _arg:
+                x = item.split(' ')
+                if len(x) <= 1:
+                    continue
+
+                if x[0] == 'p':
+                    popularity = int(x[1])
+
+                if x[0] == 'a':
+                    artists = x[1:]
+
+            if tags[0] != "all":
+                data = [s for s in intro_data if len(
+                    set(tags) & set(s['tags'])) > 0 and s['popularity'] >= popularity]
+                self.intro_list.extend(data)
+
+            if len(artists) > 0:
+                data = [s for s in intro_data if len(
+                    set(artists) & set(s['artists'])) > 0 and s['popularity'] >= popularity]
+                self.intro_list.extend(data)
+
+            self.intro_list = list(
+                {v['id']: v for v in self.intro_list}.values())
 
         # 問題数が0問の場合
         if len(self.intro_list) < 1:
             await ctx.message.reply("該当する問題が1問もない…よ\n他のオプションを試して欲しいな…")
-            self.intro_list = None
+            self.intro_list = list()
             return
 
         random.shuffle(self.intro_list)
@@ -171,7 +187,7 @@ class IntroQuiz(commands.Cog):
         self.reply_message = None
         self.embed_message = None
         self.voice_client = None
-        self.intro_list = None
+        self.intro_list = list()
         self.pos = 0
 
     async def __join(self, channel: discord.VoiceChannel):
