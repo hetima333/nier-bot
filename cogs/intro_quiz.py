@@ -48,37 +48,6 @@ class IntroQuiz(commands.Cog):
             return
 
     @intro.command()
-    async def foo(self, ctx, *, arg: str = "all"):
-        _arg = arg.split('-')
-        tags = _arg[0].split(' ')
-
-        popularity = 5
-
-        # -pなど判定
-        for item in _arg:
-            x = item.split(' ')
-            if len(x) <= 1:
-                continue
-
-            if x[0] == 'p':
-                popularity = int(x[1])
-
-        # jsonからデータを読み込む
-        with self.INTRO_DATA_FILE.open() as f:
-            intro_data = json.loads(f.read())
-
-        # 必要なデータだけを抽出する
-        if tags[0] != "all":
-            self.intro_list = [s for s in intro_data if len(
-                set(tags) & set(s['tags'])) > 0 and s['popularity'] <= popularity]
-        else:
-            self.intro_list = intro_data
-
-        for item in self.intro_list:
-            print(
-                f"{item['popularity']} : {item['title']} : {item['tags']} : {item['artist']}")
-
-    @intro.command()
     async def start(self, ctx, *, arg: str = "all"):
         # コマンドを入力したユーザーがVCに参加していない場合はエラー
         if ctx.author.voice is None:
@@ -155,9 +124,9 @@ class IntroQuiz(commands.Cog):
         if payload.message_id != self.embed_message.id:
             return
 
-        member = self.reply_message.guild.get_member(payload.user_id)
+        member = self.embed_message.guild.get_member(user.id)
         if member is not None:
-            await self.reply_message.remove_reaction(emoji, member)
+            await self.embed_message.remove_reaction(emoji, member)
 
         if emoji == "🔁":
             await self.__play_intro(self.reply_message)
