@@ -17,6 +17,7 @@ class Nier(commands.Bot):
             command_prefix=config.COMMAND_PREFIX,
             description="",
             fetch_offline_members=False,
+            help_command=None,
             intents=discord.Intents.all()
         )
 

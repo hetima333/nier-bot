@@ -10,6 +10,15 @@ class Mention(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @commands.command()
+    async def help(self, ctx):
+        embed = discord.Embed(color=config.DEFAULT_EMBED_COLOR)
+        embed.description = "[ニーアbotの説明書](https://www.notion.so/hetima333/bot-6bd0bf832f6a4e9ab5984ec6a6ecd805)"
+        embed.set_author(
+            name='説明書',
+            icon_url=self.bot.user.avatar_url)
+        await ctx.message.reply("私の説明書だ…よ", embed=embed)
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot:
