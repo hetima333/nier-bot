@@ -1,0 +1,21 @@
+[{
+        "img_url": "https://cdn.discordapp.com/attachments/829959130081001483/829963435550441513/the_skeld.png",
+        "formal_name": "The Skeld",
+        "reg": "((the)?skeld|((ザ|ざ)・?)?(スケルド|すけるど))"
+    },
+    {
+        "img_url": "https://cdn.discordapp.com/attachments/829959130081001483/829963329321173013/mira_hq-1.png",
+        "formal_name": "MIRA HQ",
+        "reg": "((mira)?hq|mira(hq)?|(ミラ|みら)(エイチキュー|えいちきゅー)?|(ミラ|みら)?(エイチキュー|えいちきゅー))"
+    },
+    {
+        "img_url": "https://cdn.discordapp.com/attachments/829959130081001483/829963280696475658/polus.png",
+        "formal_name": "Polus",
+        "reg": "(polus|ポーラス|ぽーらす)"
+    },
+    {
+        "img_url": "https://cdn.discordapp.com/attachments/829959130081001483/829963004043853854/airship_map_black_ver1.01.png",
+        "formal_name": "the AIRSHIP",
+        "reg": "((the)?airship|((ザ|ざ)・?)?(エアシップ|えあしっぷ))"
+    }
+]
